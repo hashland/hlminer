@@ -5,8 +5,6 @@ const
     // Equivalent of the _IO('U', 20) constant in the linux kernel.
     USBDEVFS_RESET          = "U".charCodeAt(0) << (4*2) | 20,
     fs                      = require('fs'), {
-        BAIKAL_ID_VENDOR,
-        BAIKAL_ID_PRODUCT,
         BAIKAL_RESET,
         BAIKAL_GET_INFO,
         BAIKAL_SET_OPTION,
@@ -24,9 +22,8 @@ const
 } = require('./constants');
 
 class BaikalUsbInterface {
-    constructor(vendorId, productId) {
-        this.vendorId = vendorId;
-        this.productId = productId;
+    constructor(usbDevice) {
+        this.usbDevice = usbDevice;
         this.usbDevice = null;
         this.usbDeviceInterface = null;
         this.usbKernelDriverWasAttached = false;
@@ -36,11 +33,6 @@ class BaikalUsbInterface {
     }
 
     connect() {
-        this.usbDevice = usb.findByIds(this.vendorId, this.productId);
-
-        if(!this.usbDevice)
-            throw 'Could not find usbDevice';
-
         this.usbDevice.open();
 
         this.usbDeviceInterface = this.usbDevice.interface(1);

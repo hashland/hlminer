@@ -1,4 +1,5 @@
-const multiHashing = require('multi-hashing');
+const EventEmitter = require('events'),
+    multiHashing = require('multi-hashing');
 
 class CpuDevice extends EventEmitter {
     constructor() {
@@ -27,3 +28,5 @@ class CpuDevice extends EventEmitter {
 
     }
 }
+
+exports.CpuDevice = CpuDevice;

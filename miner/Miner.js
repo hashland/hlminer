@@ -1,11 +1,11 @@
 const StratumClientFactory = require('../stratum/client/ClientFactory').ClientFactory,
+    {DeviceFactory} = require('./device/DeviceFactory'),
     {WorkGenerator} = require('./WorkGenerator')
 
 class Miner {
-    constructor(devices, algorithm, host, port, user, password) {
-        this.devices = devices;
+    constructor(algorithm, host, port, user, password, includeCpuDevice) {
+        this.devices = DeviceFactory.createAvailableDevices(includeCpuDevice);
         this.jobs = [];
-        this.nonceGenerator = null;
         this.mainLoopInterval = null;
 
         this.client = StratumClientFactory.createClient(algorithm, {

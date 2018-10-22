@@ -17,7 +17,7 @@ const
     {BaikalUsbInterface} = require('./BaikalUsbInterface');
 
 class BaikalUsbDevice extends EventEmitter {
-    constructor() {
+    constructor(usbDevice) {
         super();
 
         this.devices = [];
@@ -28,7 +28,7 @@ class BaikalUsbDevice extends EventEmitter {
         this.buffer = new RingBuffer(BAIKAL_WORK_FIFO);
         this.deviceCount = 0;
 
-        this.usbInterface = new BaikalUsbInterface(BAIKAL_ID_VENDOR, BAIKAL_ID_PRODUCT);
+        this.usbInterface = new BaikalUsbInterface(usbDevice);
 
         this.jobEmpty = false;
     }
