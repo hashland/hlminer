@@ -1,6 +1,7 @@
 const StratumClientFactory = require('../stratum/client/ClientFactory').ClientFactory,
     {DeviceFactory} = require('./device/DeviceFactory'),
-    {WorkGenerator} = require('./WorkGenerator')
+    {WorkGenerator} = require('./WorkGenerator'),
+    bignum = require('bignum');
 
 class Miner {
     constructor(algorithm, host, port, user, password, includeCpuDevice) {
@@ -72,7 +73,10 @@ class Miner {
             hash = work.job.hash(header);
 
 
-        console.log('Found hash ' + hash.toString('hex'));
+        const hashBignum = bignum.fromBuffer(hash, {endian: 'little', size: 32}),
+            shareDiff = work.job.maximumTarget / hashBignum.toNumber() * work.job.multiplier;
+
+        console.log(`Found share with difficulty ${shareDiff.toFixed(3)}`);
 
         const params = [
             work.job.id,

@@ -14,6 +14,8 @@ class LbryJob extends BitcoinJob {
          * Claimtrie
          */
         this.claimtrie = claimtrie;
+        this.maximumTarget = maximumTarget;
+        this.multiplier = Math.pow(2, 8);
     }
 
     static fromParamsArray(params) {
