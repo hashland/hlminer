@@ -1,6 +1,6 @@
 const
     {BitcoinJob} = require('./BitcoinJob'),
-    hash = require('multi-hashing'),
+    multiHashing = require('multi-hashing'),
     maximumTarget = 0x00000000FFFF0000000000000000000000000000000000000000000000000000,
     bignum = require('bignum');
 
@@ -30,7 +30,12 @@ class LbryJob extends BitcoinJob {
         return bignum(maximumTarget).div(difficulty);
     }
 
-    createBlockHeader(extraNonce1, extraNonce2) {
+    hash(blockHeader) {
+        return multiHashing.lbry(blockHeader);
+    }
+
+
+    createBlockHeader(extraNonce1, extraNonce2, nonce) {
         const blockHeader = Buffer.alloc(LbryJob.BLOCK_HEADER_SIZE, 0);
 
         let pos = 0;
@@ -76,6 +81,13 @@ class LbryJob extends BitcoinJob {
         pos += 4;
 
         //last 4 bytes reserved for nonce (will be initialized with 0)
+        if(nonce) {
+            Buffer
+                .from(nonce, 'hex')
+                .swap32()
+                .copy(blockHeader, pos);
+            pos += 4;
+        }
 
         return blockHeader;
     }

@@ -68,7 +68,11 @@ class Miner {
     }
 
     _handleNonceFound(work, nonce) {
-        console.log('Nonce found ' + nonce);
+        const header = work.job.createBlockHeader(work.extraNonce1, work.nonce2, nonce),
+            hash = work.job.hash(header);
+
+
+        console.log('Found hash ' + hash.toString('hex'));
 
         const params = [
             work.job.id,
