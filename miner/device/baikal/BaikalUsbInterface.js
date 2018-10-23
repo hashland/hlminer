@@ -24,7 +24,6 @@ const
 class BaikalUsbInterface {
     constructor(usbDevice) {
         this.usbDevice = usbDevice;
-        this.usbDevice = null;
         this.usbDeviceInterface = null;
         this.usbKernelDriverWasAttached = false;
         this.usbOutEndpoint = null;
@@ -33,6 +32,9 @@ class BaikalUsbInterface {
     }
 
     connect() {
+        if(!this.usbDevice)
+            throw 'Missing usbDevice';
+
         this.usbDevice.open();
 
         this.usbDeviceInterface = this.usbDevice.interface(1);
