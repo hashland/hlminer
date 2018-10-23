@@ -103,9 +103,8 @@ class BaikalUsbInterface {
         data.writeUInt8(algorithm, pos++);
         data.writeUInt8(deviceId, pos++);
 
-        //todo: target is 64bit switch to bignum
-        data.writeInt32LE(target, pos);
-        data.writeInt32LE(0, pos+4);
+        const targetBuffer = target.toBuffer().slice(0,8).swap32();
+        targetBuffer.copy(data, pos);
         pos += 8;
 
         header.copy(data, 10);

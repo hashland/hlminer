@@ -1,6 +1,8 @@
 const
     {BitcoinJob} = require('./BitcoinJob'),
-    hash = require('multi-hashing');
+    hash = require('multi-hashing'),
+    maximumTarget = 0x00000000FFFF0000000000000000000000000000000000000000000000000000,
+    bignum = require('bignum');
 
 class LbryJob extends BitcoinJob {
 
@@ -22,6 +24,10 @@ class LbryJob extends BitcoinJob {
 
     toParamsArray() {
         return [this.id, this.prevHash, this.claimtrie, this.coinb1, this.coinb2, this.merkleBranches, this.version, this.bits, this.time];
+    }
+
+    calculateTarget(difficulty) {
+        return bignum(maximumTarget).div(difficulty);
     }
 
     createBlockHeader(extraNonce1, extraNonce2) {
