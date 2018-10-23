@@ -32,8 +32,12 @@ class BaikalUsbDevice extends EventEmitter {
     }
 
     _checkTemperature() {
-        const temperatures = this.devices.map(d => d.temp),
+        const temperatures = this.devices.filter(d => typeof d.temp !== "undefined").map(d => d.temp),
             maxTemperature = Math.max(...temperatures);
+
+        if(temperatures.length != this.devices.length) {
+            console.log('Warning: Could not get temperatures for all devices');
+        }
 
         let fanSpeed = 100;
 
@@ -45,7 +49,6 @@ class BaikalUsbDevice extends EventEmitter {
                 break;
             }
         }
-
 
         if(fanSpeed != this.fanSpeed) {
             console.log('>>>>>>>>>>>>>>> MAX TEMP CHANGED TO ' + maxTemperature + ' SETTING FAN SPEED TO ' + fanSpeed);
