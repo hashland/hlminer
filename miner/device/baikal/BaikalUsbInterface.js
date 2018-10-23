@@ -110,33 +110,29 @@ class BaikalUsbInterface {
 
         header.copy(data, 10);
 
-        return await this._sendMessage(BAIKAL_SEND_WORK, deviceId, workIndex, 0, data);
+        return this._sendMessage(BAIKAL_SEND_WORK, deviceId, workIndex, 0, data);
     }
 
     requestResult(deviceId) {
         return this._sendMessage(BAIKAL_GET_RESULT, deviceId);
     }
 
-    async setOptions(cutoffTemp, fanSpeed) {
+    async setOption(deviceId, cutoffTemp, fanSpeed) {
+        const data = Buffer.alloc(4);
+        let pos = 0;
 
-        for(let i=0; i<this.deviceCount; i++) {
-            const data = Buffer.alloc(4);
-            let pos = 0;
+        /*
+        data.writeUInt8(((clk / 10) % 20) + 2, pos++);
+        data.writeUInt8(algo, pos++);
+        */
+        //has no effect on baikal gb
+        data.writeUInt8(0, pos++);
+        data.writeUInt8(0, pos++);
 
-            /*
-            data.writeUInt8(((clk / 10) % 20) + 2, pos++);
-            data.writeUInt8(algo, pos++);
-            */
-            //has no effect on baikal gb
-            data.writeUInt8(0, pos++);
-            data.writeUInt8(0, pos++);
+        data.writeUInt8(cutoffTemp, pos++);
+        data.writeUInt8(fanSpeed, pos++);
 
-            data.writeUInt8(cutoffTemp, pos++);
-            data.writeUInt8(fanSpeed, pos++);
-
-            const test = await this._sendMessage(BAIKAL_SET_OPTION, i, 0, 0, data);
-        }
-
+        return this._sendMessage(BAIKAL_SET_OPTION, deviceId, 0, 0, data);
     }
 
 

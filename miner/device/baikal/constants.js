@@ -25,6 +25,16 @@ exports.BAIKAL_STATUS_NONCE_READY = 0x01;
 exports.BAIKAL_STATUS_JOB_EMPTY   = 0x02;
 exports.BAIKAL_STATUS_NEW_MINER   = 0x04;
 
+// maxTemperature => Speed
+exports.BAIKAL_FAN_TEMP_STEPS     = {
+    30: 0,
+    35: 15,
+    40: 30,
+    45: 45,
+    50: 70
+};
+
+
 exports.toBaikalAlgorithm = (algorithm) => {
     switch(algorithm) {
         case Algorithm.LBRY:

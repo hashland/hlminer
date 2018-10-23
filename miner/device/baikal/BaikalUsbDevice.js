@@ -1,9 +1,7 @@
 const
 
     {
-        BAIKAL_ID_VENDOR,
-        BAIKAL_ID_PRODUCT,
-        BAIKAL_GET_RESULT,
+        BAIKAL_FAN_TEMP_STEPS,
         BAIKAL_CUTOFF_TEMP,
         BAIKAL_FANSPEED_DEF,
         BAIKAL_STATUS_NONCE_READY,
@@ -37,28 +35,23 @@ class BaikalUsbDevice extends EventEmitter {
         const temperatures = this.devices.map(d => d.temp),
             maxTemperature = Math.max(...temperatures);
 
-        let fanSpeed;
+        let fanSpeed = 100;
 
-        if (maxTemperature < 30) {
-            fanSpeed = 0;
-        } else if ( maxTemperature < 35 ) {
-            fanSpeed = 15;
-        } else if ( maxTemperature < 40 ) {
-            fanSpeed = 30;
-        } else if ( maxTemperature < 45 ) {
-            fanSpeed = 45;
-        } else if ( maxTemperature < 50 ) {
-            fanSpeed = 70;
-        } else {
-            fanSpeed = 100;
+        for (const temp in BAIKAL_FAN_TEMP_STEPS) {
+            const speed = BAIKAL_FAN_TEMP_STEPS[temp];
+
+            if(maxTemperature < temp) {
+                fanSpeed = speed;
+                break;
+            }
         }
+
 
         if(fanSpeed != this.fanSpeed) {
             console.log('>>>>>>>>>>>>>>> MAX TEMP CHANGED TO ' + maxTemperature + ' SETTING FAN SPEED TO ' + fanSpeed);
-            this.fanSpeed = fanSpeed;
-        }
 
-        this.usbInterface.setOptions(this.cutOffTemperature, this.fanSpeed);
+            this.setFanSpeed(fanSpeed);
+        }
     }
 
     setFanSpeed(fanSpeed) {
@@ -68,7 +61,7 @@ class BaikalUsbDevice extends EventEmitter {
 
         this.fanSpeed = fanSpeed;
 
-        this.reconfigureDevices();
+        this._setOptions();
     }
 
 
@@ -131,8 +124,8 @@ class BaikalUsbDevice extends EventEmitter {
         this.devices = [];
         this.deviceCount = deviceCount;
 
-        for(let i=0; i<deviceCount; i++) {
-            const info = await this.usbInterface.getInfo(i),
+        for(let deviceId=0; deviceId<deviceCount; deviceId++) {
+            const info = await this.usbInterface.getInfo(deviceId),
                 device = {
                     id: info.device_id,
                     fw_ver: info.fw_ver,
@@ -146,7 +139,13 @@ class BaikalUsbDevice extends EventEmitter {
             this.devices.push(device);
         }
 
-        await this.usbInterface.setOptions(this.cutOffTemperature, this.fanSpeed);
+        this._setOptions();
+    }
+
+    async _setOptions() {
+        for(let deviceId=0; deviceId<this.deviceCount; deviceId++) {
+            await this.usbInterface.setOption(deviceId, this.cutOffTemperature, this.fanSpeed);
+        }
     }
 
     async stop() {
