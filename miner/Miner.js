@@ -75,7 +75,7 @@ class Miner {
         });
     }
 
-    _handleNonceFound(work, nonce) {
+    _handleNonceFound(work, deviceId, nonce) {
         const header = work.job.createBlockHeader(work.extraNonce1, work.nonce2, nonce),
             hash = work.job.hash(header);
 
@@ -83,7 +83,12 @@ class Miner {
         const hashBignum = bignum.fromBuffer(hash, {endian: 'little', size: 32}),
             shareDiff = work.job.maximumTarget / hashBignum.toNumber() * work.job.multiplier;
 
-        console.log(`Found share with difficulty ${shareDiff.toFixed(3)}`);
+        if(shareDiff < 1 || shareDiff < this.client.difficulty) {
+            console.log(`Share difficulty ${shareDiff} was lower than work difficulty (${this.client.difficulty}), target is: ${work.target.toBuffer().toString('hex')} possible hardware error`);
+            return;
+        }
+
+        console.log(`Found share with difficulty ${shareDiff.toFixed(3)} (work diff: ${this.client.difficulty}) on device: ${deviceId}`);
 
         const params = [
             work.job.id,
