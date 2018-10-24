@@ -18,6 +18,7 @@ class Miner {
             agent: 'hlminer/0.1'
         });
 
+        this.client.on('connect', this._handleClientConnect.bind(this));
         this.client.on('disconnect', this._handleClientDisconnect.bind(this));
         this.client.on('subscribed', this._handleClientSubscription.bind(this));
 
@@ -29,12 +30,18 @@ class Miner {
         this.devices.forEach(dev => dev.clearWorkQueue());
     }
 
+    _handleClientConnect() {
+        console.log('Stratum client connected');
+        this._clearJobs();
+    }
+
     _handleClientSubscription() {
+        console.log('Stratum client subscribed');
         this.workGenerator = new WorkGenerator(this.client);
     }
 
-    _handleClientDisconnect() {
-        console.log('Client was disconnected, reconnecting');
+    _handleClientDisconnect(reason) {
+        console.log(`Stratum client disconnected: ${reason}`);
         this._clearJobs();
 
         setTimeout(() => {

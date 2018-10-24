@@ -157,7 +157,10 @@ class BaseClient extends EventEmitter {
                 this.authorized = true;
             }
 
-            if (!this.authorized) {
+            if (this.authorized) {
+                this.emit('connect');
+
+            } else {
                 this.disconnect('Could not authorize');
             }
 
