@@ -52,8 +52,20 @@ class BaikalUsbInterface extends EventEmitter {
 
 
         this.usbInEndpoint = this.usbDeviceInterface.endpoints[1];
-        this.usbInEndpoint.on('data', this._handleUsbData.bind(this));
-        this.usbInEndpoint.startPoll(1);
+        this._usbPollInput();
+    }
+
+    _usbPollInput() {
+        this.usbInEndpoint.transfer(512, (err, buffer) => {
+            if(err) {
+                console.log(`USB input error: ${err}`);
+
+            } else {
+                this._handleUsbData(buffer);
+            }
+
+            this._usbPollInput();
+        });
     }
 
     _handleUsbData(buffer) {
