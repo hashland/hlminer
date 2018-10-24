@@ -1,9 +1,6 @@
 const
     usb                     = require('usb'),
     {MessageFactory}        = require('./MessageFactory'),
-    ioctl                   = require('ioctl'),
-    // Equivalent of the _IO('U', 20) constant in the linux kernel.
-    USBDEVFS_RESET          = "U".charCodeAt(0) << (4*2) | 20,
     fs                      = require('fs'), {
         BAIKAL_RESET,
         BAIKAL_GET_INFO,
@@ -54,33 +51,14 @@ class BaikalUsbInterface {
         this.usbOutEndpoint.transferType = usb.LIBUSB_TRANSFER_TYPE_BULK;
     }
 
-
-
-    resetUsb() {
-        return new Promise(
-            (resolve, reject) => {
-                console.log(`Resetting USB`);
-
-                fs.open(`/dev/bus/usb/${('00' + this.usbDevice.busNumber).slice(-3)}/${('00' + this.usbDevice.deviceAddress).slice(-3)}`, 'w+', (err, fd) => {
-                    const ret = ioctl(fd, USBDEVFS_RESET, 0);
-
-                    if(ret < 0) {
-                        console.log('Could not reset usb device');
-                        reject();
-
-                    } else {
-                        console.log('USB reset successful');
-                        resolve();
-                    }
-                });
-
-            }
-        )
-    }
-
     resetHashboard() {
-        return this._sendMessage(BAIKAL_RESET);
-
+        try {
+           return this._sendMessage(BAIKAL_RESET);
+        }
+        catch (e) {
+            this.usbDevice.reset();
+            return this._sendMessage(BAIKAL_RESET);
+        }
     }
 
     async getInfo(deviceId) {
