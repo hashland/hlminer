@@ -1,8 +1,9 @@
 const
+    EventEmitter            = require('events'),
     usb                     = require('usb'),
     {MessageFactory}        = require('./MessageFactory'),
-    fs                      = require('fs'), {
-        BAIKAL_RESET,
+    fs                      = require('fs'),
+    {    BAIKAL_RESET,
         BAIKAL_GET_INFO,
         BAIKAL_SET_OPTION,
         BAIKAL_SET_IDLE,
@@ -18,14 +19,14 @@ const
         toBaikalAlgorithm
 } = require('./constants');
 
-class BaikalUsbInterface {
+class BaikalUsbInterface extends EventEmitter {
     constructor(usbDevice) {
+        super();
         this.usbDevice = usbDevice;
         this.usbDeviceInterface = null;
         this.usbKernelDriverWasAttached = false;
         this.usbOutEndpoint = null;
         this.usbInEndpoint = null;
-        this.usbMutex = false;
     }
 
     connect() {
@@ -46,31 +47,75 @@ class BaikalUsbInterface {
         this.usbDeviceInterface.claim();
 
         this.usbOutEndpoint = this.usbDeviceInterface.endpoints[0];
-        this.usbInEndpoint = this.usbDeviceInterface.endpoints[1];
-
         this.usbOutEndpoint.transferType = usb.LIBUSB_TRANSFER_TYPE_BULK;
+
+
+        this.usbInEndpoint = this.usbDeviceInterface.endpoints[1];
+        this.usbInEndpoint.on('data', this._handleUsbData.bind(this));
+        this.usbInEndpoint.startPoll(1);
     }
 
-    resetHashboard() {
-        try {
-           return this._sendMessage(BAIKAL_RESET);
+    _handleUsbData(buffer) {
+        const message = MessageFactory.createMessageFromBuffer(buffer);
+
+        switch(message.cmd) {
+            case BAIKAL_RESET:
+                this.emit('reset', message);
+                break;
+
+            case BAIKAL_GET_INFO:
+                this.emit('info', message);
+                break;
+
+            case BAIKAL_SET_OPTION:
+                this.emit('set_option', message);
+                break;
+
+            case BAIKAL_GET_RESULT:
+                this.emit('result', message);
+                break;
+
+            case BAIKAL_SEND_WORK:
+                this.emit('send_work', message);
+                break;
+
+
+            default:
+                console.log('Received unknown message');
+                console.log(message);
+                break;
         }
-        catch (e) {
-            this.usbDevice.reset();
-            return this._sendMessage(BAIKAL_RESET);
-        }
+
+
     }
 
-    async getInfo(deviceId) {
+    resetUsb() {
+        return new Promise((resolve, reject) => {
+
+            this.usbDevice.reset((err) => {
+                if (err)
+                    reject(err);
+                else
+                    resolve();
+            });
+
+        });
+    }
+
+    async requestReset() {
+        return this._sendMessage(BAIKAL_RESET);
+    }
+
+    async requestInfo(deviceId) {
         return this._sendMessage(BAIKAL_GET_INFO, deviceId);
     }
 
 
-    async identify(deviceId) {
+    async requestIdentify(deviceId) {
         return this._sendMessage(BAIKAL_SET_ID, deviceId);
     }
 
-    async setIdle() {
+    async requestIdle() {
         return this._sendMessage(BAIKAL_SET_IDLE);
     }
 
@@ -112,31 +157,6 @@ class BaikalUsbInterface {
         return this._sendMessage(BAIKAL_SET_OPTION, deviceId, 0, 0, data);
     }
 
-
-    _waitForUsb() {
-        const me = this;
-
-        return new Promise((resolve, reject) => {
-            if(me.usbMutex === false) {
-                resolve();
-                return;
-            }
-
-            const waitInterval = setInterval(() => {
-                console.log('Waiting for USB');
-
-                if (me.usbMutex === false) {
-                    clearInterval(waitInterval);
-                    resolve();
-                }
-            }, 50);
-
-
-
-        });
-    }
-
-
     /**
      *
      * @param cmd
@@ -148,34 +168,17 @@ class BaikalUsbInterface {
      * @private
      */
     _sendMessage(cmd, deviceId = 0, param = 0, dest = 0, data = null) {
-        const me = this;
-
         return new Promise((resolve, reject) => {
 
-            this._waitForUsb().then(() => {
-                const buf = MessageFactory.createBuffer(cmd, deviceId, param, dest, data);
+            const buf = MessageFactory.createBuffer(cmd, deviceId, param, dest, data);
 
-                this.usbMutex = true;
-
-                this.usbOutEndpoint.transfer(buf, err => {
-
-                    if(err) {
-                        reject(err);
-                    } else {
-                        this.usbInEndpoint.transfer(512, (err, buffer) => {
-                            this.usbMutex = false;
-
-                            if(err) {
-                                reject(err);
-                            } else {
-                                const message = MessageFactory.createMessageFromBuffer(buffer);
-                                resolve(message);
-                            }
-                        });
-                    }
-                });
-            })
-
+            this.usbOutEndpoint.transfer(buf, err => {
+                if(err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
         });
     }
 
