@@ -85,18 +85,12 @@ class Miner {
             nonce
         ];
 
-        this.client.submit(params).then(success => {
-            if(success)
-                console.log('Share was accepted :-)');
-            else
-                console.log('SHARE WAS NOT ACCEPTED!');
+        this.client.submit(params).then(() => {
+            console.log('Share was accepted :-)');
 
-        }).catch(e => {
-            console.log('>>>>>>>>>>>>>> ERROR WHILE SUBMIT');
-            console.log(e);
-
-        });
-
+        }, err => {
+            console.log(`SHARE WAS NOT ACCEPTED: ${err}`);
+        })
 
     }
 

@@ -316,21 +316,14 @@ class BaseClient extends EventEmitter {
 
         const promise = new Promise((resolve, reject) => {
             const callback = (message) => {
-                if (message.error) {
-                    this.rejectedSharesCounter++;
-
-                    reject(message.error);
-                    return;
-                }
-
-                if (true === message.result) {
+                if(message.result === true) {
                     this.acceptedSharesCounter++;
+                    resolve();
+
                 } else {
                     this.rejectedSharesCounter++;
+                    reject(message.error);
                 }
-
-
-                resolve(message.result === true);
             }
 
             this.resultCallbacks[this.messageCounter + 1] = callback;
