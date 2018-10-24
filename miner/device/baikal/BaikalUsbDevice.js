@@ -216,10 +216,10 @@ class BaikalUsbDevice extends EventEmitter {
      */
 
     async start() {
-        this.usbInterface.connect();
+        await this.usbInterface.connect();
         this.usbInterface.requestReset();
 
-        this.workLoopInterval = setInterval(this._workLoop.bind(this), 250);
+        this.workLoopInterval = setInterval(this._workLoop.bind(this), 100);
     }
 
     async _setOptions() {
@@ -235,9 +235,6 @@ class BaikalUsbDevice extends EventEmitter {
 
     async reset() {
         await this.stop();
-
-        await this.usbInterface.resetUsb();
-
         await this.start();
     }
 

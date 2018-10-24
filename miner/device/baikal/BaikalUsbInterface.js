@@ -29,11 +29,12 @@ class BaikalUsbInterface extends EventEmitter {
         this.usbInEndpoint = null;
     }
 
-    connect() {
+    async connect() {
         if(!this.usbDevice)
             throw 'Missing usbDevice';
 
         this.usbDevice.open();
+        await this.resetUsb();
 
         this.usbDeviceInterface = this.usbDevice.interface(1);
 
