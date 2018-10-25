@@ -69,37 +69,39 @@ class BaikalUsbInterface extends EventEmitter {
     }
 
     _handleUsbData(buffer) {
-        const message = MessageFactory.createMessageFromBuffer(buffer);
+        try {
+            const message = MessageFactory.createMessageFromBuffer(buffer);
 
-        switch(message.cmd) {
-            case BAIKAL_RESET:
-                this.emit('reset', message);
-                break;
+            switch(message.cmd) {
+                case BAIKAL_RESET:
+                    this.emit('reset', message);
+                    break;
 
-            case BAIKAL_GET_INFO:
-                this.emit('info', message);
-                break;
+                case BAIKAL_GET_INFO:
+                    this.emit('info', message);
+                    break;
 
-            case BAIKAL_SET_OPTION:
-                this.emit('set_option', message);
-                break;
+                case BAIKAL_SET_OPTION:
+                    this.emit('set_option', message);
+                    break;
 
-            case BAIKAL_GET_RESULT:
-                this.emit('result', message);
-                break;
+                case BAIKAL_GET_RESULT:
+                    this.emit('result', message);
+                    break;
 
-            case BAIKAL_SEND_WORK:
-                this.emit('send_work', message);
-                break;
+                case BAIKAL_SEND_WORK:
+                    this.emit('send_work', message);
+                    break;
 
 
-            default:
-                console.log('Received unknown message');
-                console.log(message);
-                break;
+                default:
+                    console.log('Received unknown message');
+                    console.log(message);
+                    break;
+            }
+        } catch (e) {
+            console.log('Could not create message from usbBuffer, dropping USB frame: ' + e)
         }
-
-
     }
 
     resetUsb() {
