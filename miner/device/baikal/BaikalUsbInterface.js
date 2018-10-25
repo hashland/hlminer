@@ -24,7 +24,6 @@ class BaikalUsbInterface extends EventEmitter {
         super();
         this.usbDevice = usbDevice;
         this.usbDeviceInterface = null;
-        this.usbKernelDriverWasAttached = false;
         this.usbOutEndpoint = null;
         this.usbInEndpoint = null;
     }
@@ -39,10 +38,7 @@ class BaikalUsbInterface extends EventEmitter {
         this.usbDeviceInterface = this.usbDevice.interface(1);
 
         if (this.usbDeviceInterface.isKernelDriverActive()) {
-            this.usbKernelDriverWasAttached = true;
             this.usbDeviceInterface.detachKernelDriver();
-        } else {
-            this.usbKernelDriverWasAttached = false;
         }
 
         this.usbDeviceInterface.claim();
@@ -52,20 +48,40 @@ class BaikalUsbInterface extends EventEmitter {
 
 
         this.usbInEndpoint = this.usbDeviceInterface.endpoints[1];
-        this._usbPollInput();
+        this.usbInEndpoint.transferType = usb.LIBUSB_TRANSFER_TYPE_BULK;
+        this.usbInEndpoint.startPoll(1, 512);
+        this.usbInEndpoint.on('data', this._handleUsbData.bind(this));
+        this.usbInEndpoint.on('error', this._handleUsbError.bind(this));
     }
 
-    _usbPollInput() {
-        this.usbInEndpoint.transfer(512, (err, buffer) => {
+    async disconnect() {
+        this.usbInEndpoint.stopPoll(err => {
             if(err) {
-                console.log(`USB input error: ${err}`);
-
-            } else {
-                this._handleUsbData(buffer);
+                console.log(`Could not stop USB polling: ${err}`);
+                return;
             }
 
-            this._usbPollInput();
+            this.usbDeviceInterface.release(true, err => {
+                if(err) {
+                    console.log(`Could not release USB interface: ${err}`);
+                    return;
+                }
+
+                try {
+                    this.usbDevice.close();
+                } catch(e) {
+                    console.log(`Could not close USB device: ${e}`);
+                }
+
+            })
         });
+    }
+
+
+    async _handleUsbError(err) {
+        console.log(`USB error: ${err}, resetting USB`);
+        await this.disconnect();
+        await this.connect();
     }
 
     _handleUsbData(buffer) {
@@ -100,7 +116,7 @@ class BaikalUsbInterface extends EventEmitter {
                     break;
             }
         } catch (e) {
-            console.log('Could not create message from usbBuffer, dropping USB frame: ' + e)
+            console.log(`Could not create message from usbBuffer: ${e}`);
         }
     }
 
@@ -187,28 +203,20 @@ class BaikalUsbInterface extends EventEmitter {
 
             const buf = MessageFactory.createBuffer(cmd, deviceId, param, dest, data);
 
-            this.usbOutEndpoint.transfer(buf, err => {
-                if(err) {
-                    reject(err);
-                } else {
-                    resolve();
-                }
-            });
+            try {
+                this.usbOutEndpoint.transfer(buf, err => {
+                    if(err) {
+                        reject(err);
+                    } else {
+                        resolve();
+                    }
+                });
+
+            } catch(e) {
+                console.log(`Could not send via USB: ${e}`);
+            }
         });
     }
-
-
-
-    disconnect() {
-        this.usbDeviceInterface.release(() => {
-            if (this.usbKernelDriverWasAttached) {
-                this.usbDeviceInterface.attachKernelDriver();
-            }
-
-            this.usbDevice.close();
-        })
-    }
-
 }
 
 exports.BaikalUsbInterface = BaikalUsbInterface;

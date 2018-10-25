@@ -98,6 +98,8 @@ class BaikalUsbDevice extends EventEmitter {
                     const workIndex = message.work_idx,
                         work = this.buffer.get(workIndex);
 
+                    console.log('Found for ' + workIndex);
+
                     this.emit('nonce_found', work, `BLKU ${message.device_id}`, message.nonce);
 
                 } catch(e) {
@@ -205,6 +207,8 @@ class BaikalUsbDevice extends EventEmitter {
         this.jobEmpty = false;
 
         for(let i =0; i<this.deviceCount; i++){
+            this.jobEmpty = false;
+
             await this.usbInterface.requestResult(i);
         }
 
