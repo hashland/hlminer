@@ -176,6 +176,7 @@ class BaikalUsbInterface extends EventEmitter {
             .toBuffer({
                 size: 4
             })
+            .slice(0,8)
             .swap32()
             .copy(data, pos);
 
