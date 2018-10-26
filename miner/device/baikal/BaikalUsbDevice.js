@@ -10,13 +10,14 @@ const
         BAIKAL_WORK_FIFO,
         toBaikalAlgorithm
     } = require('./constants'),
-    EventEmitter = require('events'),
+    {Device} = require('../Device'),
     {RingBuffer} = require('../../util/RingBuffer'),
     {BaikalUsbInterface} = require('./BaikalUsbInterface');
 
-class BaikalUsbDevice extends EventEmitter {
+class BaikalUsbDevice extends Device {
     constructor() {
         super();
+        this.type = "baikalusb";
 
         this.workQueue = [];
         this.boards = [];
