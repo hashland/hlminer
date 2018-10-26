@@ -15,20 +15,19 @@ const
     {BaikalUsbInterface} = require('./BaikalUsbInterface');
 
 class BaikalUsbDevice extends EventEmitter {
-    constructor(usbDevice) {
+    constructor() {
         super();
 
+        this.workQueue = [];
         this.devices = [];
 
         this.cutOffTemperature = BAIKAL_CUTOFF_TEMP;
         this.fanSpeed = BAIKAL_FANSPEED_DEF;
 
-        this.buffer = new RingBuffer(BAIKAL_WORK_FIFO);
+        this.ringBuffer = new RingBuffer(BAIKAL_WORK_FIFO);
         this.deviceCount = 0;
 
-        this.usbInterface = new BaikalUsbInterface(usbDevice);
-
-        this.jobEmpty = false;
+        this.usbInterface = new BaikalUsbInterface();
 
         this.usbInterface.on('reset', this._handleReset.bind(this));
         this.usbInterface.on('info', this._handleInfo.bind(this));
@@ -36,8 +35,6 @@ class BaikalUsbDevice extends EventEmitter {
         this.usbInterface.on('set_option', this._handleSetOption.bind(this));
         this.usbInterface.on('send_work', this._handleSendWork.bind(this));
         this.usbInterface.on('idle', this._handleIdle.bind(this));
-
-
     }
 
     /**
@@ -96,7 +93,7 @@ class BaikalUsbDevice extends EventEmitter {
 
                 try {
                     const workIndex = message.work_idx,
-                        work = this.buffer.get(workIndex);
+                        work = this.ringBuffer.get(workIndex);
 
                     console.log('Found for ' + workIndex);
 
@@ -110,7 +107,6 @@ class BaikalUsbDevice extends EventEmitter {
                 break;
 
             case BAIKAL_STATUS_JOB_EMPTY:
-                this.jobEmpty = true;
                 break;
 
             case BAIKAL_STATUS_NEW_MINER:
@@ -201,29 +197,19 @@ class BaikalUsbDevice extends EventEmitter {
         this._setOptions();
     }
 
-
-
     async _workLoop() {
-        this.jobEmpty = false;
+        for(let deviceId=0; deviceId<this.deviceCount; deviceId++){
+            if(this.workQueue.length > 0) {
+                const work = this.workQueue.pop(),
+                    workIndex = this.ringBuffer.push(work);
 
-        for(let i =0; i<this.deviceCount; i++){
-            this.jobEmpty = false;
+                await this.usbInterface.sendWork(deviceId, workIndex, toBaikalAlgorithm(work.algorithm), work.target, work.blockHeader);
+            }
 
-            await this.usbInterface.requestResult(i);
+            await this.usbInterface.requestResult(deviceId);
         }
 
         this._checkTemperature();
-    }
-
-    /**
-     * Device Interface
-     */
-
-    async start() {
-        await this.usbInterface.connect();
-        this.usbInterface.requestReset();
-
-        this.workLoopInterval = setInterval(this._workLoop.bind(this), 100);
     }
 
     async _setOptions() {
@@ -232,9 +218,21 @@ class BaikalUsbDevice extends EventEmitter {
         }
     }
 
+    /**
+     * Device Interface
+     */
+    async start() {
+        await this.usbInterface.connect();
+        await this.usbInterface.requestReset();
+
+        this.workLoopInterval = setInterval(this._workLoop.bind(this), 250);
+    }
+
     async stop() {
         clearInterval(this.workLoopInterval);
-        this.usbInterface.requestIdle();
+
+        await this.usbInterface.requestIdle();
+        await this.disconnect();
     }
 
     async reset() {
@@ -242,27 +240,16 @@ class BaikalUsbDevice extends EventEmitter {
         await this.start();
     }
 
-
     needsWork() {
-        return this.jobEmpty === true;
+        return this.workQueue.length < 10;
     }
 
     async addToWorkQueue(work) {
-        const workIndex = this.buffer.push(work);
-        const deviceId = workIndex % this.deviceCount;
-
-        try {
-            await this.usbInterface.sendWork(deviceId , workIndex, toBaikalAlgorithm(work.algorithm), work.target, work.blockHeader);
-
-
-        } catch(e) {
-            this.reset();
-        }
-
+        this.workQueue.push(work);
     }
 
     clearWorkQueue() {
-
+        this.workQueue = [];
     }
 }
 

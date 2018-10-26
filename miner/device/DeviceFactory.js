@@ -1,8 +1,7 @@
 const
     usb                                     = require('usb'),
     { BaikalUsbDevice }                     = require('./baikal/BaikalUsbDevice'),
-    { CpuDevice }                           = require('./CpuDevice'),
-    {BAIKAL_ID_VENDOR, BAIKAL_ID_PRODUCT}   = require('./baikal/constants');
+    { CpuDevice }                           = require('./CpuDevice');
 
 class DeviceFactory {
     static createAvailableDevices(createCpuDevice) {
@@ -10,13 +9,7 @@ class DeviceFactory {
 
         const devices = [];
 
-        usbDevices.forEach(usbDevice => {
-            const deviceDesc = usbDevice.deviceDescriptor;
-
-            if (deviceDesc.idVendor == BAIKAL_ID_VENDOR && deviceDesc.idProduct == BAIKAL_ID_PRODUCT) {
-                devices.push(new BaikalUsbDevice(usbDevice));
-            }
-        });
+        devices.push(new BaikalUsbDevice());
 
         if(createCpuDevice) {
             devices.push(new CpuDevice());

@@ -64,13 +64,9 @@ class Miner {
     _handleMainLoop() {
         this.devices.forEach(dev => {
 
-            if(dev.needsWork()) {
-                try {
-                    const work = this.workGenerator.generateWork();
-                    dev.addToWorkQueue(work);
-                } catch(e) {
-                    console.log(e);
-                }
+            while(dev.needsWork()) {
+                const work = this.workGenerator.generateWork();
+                dev.addToWorkQueue(work);
             }
         });
     }

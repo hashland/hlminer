@@ -10,6 +10,8 @@ const
         BAIKAL_SEND_WORK,
         BAIKAL_GET_RESULT,
         BAIKAL_SET_ID,
+        BAIKAL_ID_VENDOR,
+        BAIKAL_ID_PRODUCT,
         BAIKAL_CUTOFF_TEMP,
         BAIKAL_FANSPEED_DEF,
         BAIKAL_STATUS_NONCE_READY,
@@ -20,17 +22,21 @@ const
 } = require('./constants');
 
 class BaikalUsbInterface extends EventEmitter {
-    constructor(usbDevice) {
+    constructor() {
         super();
-        this.usbDevice = usbDevice;
+        this.usbDevice = null;
         this.usbDeviceInterface = null;
         this.usbOutEndpoint = null;
         this.usbInEndpoint = null;
     }
 
     async connect() {
+        const usbDevices = usb.getDeviceList();
+
+        this.usbDevice = usbDevices.find(d => d.deviceDescriptor.idVendor === BAIKAL_ID_VENDOR && d.deviceDescriptor.idProduct === BAIKAL_ID_PRODUCT);
+
         if(!this.usbDevice)
-            throw 'Missing usbDevice';
+            throw 'Could not find baikalusb device';
 
         this.usbDevice.open();
         await this.resetUsb();
@@ -81,7 +87,9 @@ class BaikalUsbInterface extends EventEmitter {
     async _handleUsbError(err) {
         console.log(`USB error: ${err}, resetting USB`);
         await this.disconnect();
-        await this.connect();
+
+        //reconnect after 1 sec
+        setTimeout(this.connect.bind(this), 1000);
     }
 
     _handleUsbData(buffer) {
@@ -140,7 +148,6 @@ class BaikalUsbInterface extends EventEmitter {
     async requestInfo(deviceId) {
         return this._sendMessage(BAIKAL_GET_INFO, deviceId);
     }
-
 
     async requestIdentify(deviceId) {
         return this._sendMessage(BAIKAL_SET_ID, deviceId);
