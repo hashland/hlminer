@@ -28,6 +28,7 @@ class BaikalUsbInterface extends EventEmitter {
         this.usbDeviceInterface = null;
         this.usbOutEndpoint = null;
         this.usbInEndpoint = null;
+        this.connected = false;
     }
 
     async connect() {
@@ -58,9 +59,14 @@ class BaikalUsbInterface extends EventEmitter {
         this.usbInEndpoint.startPoll(1, 512);
         this.usbInEndpoint.on('data', this._handleUsbData.bind(this));
         this.usbInEndpoint.on('error', this._handleUsbError.bind(this));
+
+        this.connected = true;
     }
 
     async disconnect() {
+        if(!this.connected)
+            return;
+
         this.usbInEndpoint.stopPoll(err => {
             if(err) {
                 console.log(`Could not stop USB polling: ${err}`);
