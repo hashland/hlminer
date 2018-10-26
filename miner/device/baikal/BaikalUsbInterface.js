@@ -172,8 +172,13 @@ class BaikalUsbInterface extends EventEmitter {
         data.writeUInt8(algorithm, pos++);
         data.writeUInt8(deviceId, pos++);
 
-        const targetBuffer = target.toBuffer().slice(0,8).swap32();
-        targetBuffer.copy(data, pos);
+        target
+            .toBuffer({
+                size: 4
+            })
+            .swap32()
+            .copy(data, pos);
+
         pos += 8;
 
         header.copy(data, 10);
