@@ -19,7 +19,7 @@ class BaikalUsbDevice extends EventEmitter {
         super();
 
         this.workQueue = [];
-        this.devices = [];
+        this.boards = [];
 
         this.cutOffTemperature = BAIKAL_CUTOFF_TEMP;
         this.fanSpeed = BAIKAL_FANSPEED_DEF;
@@ -64,7 +64,7 @@ class BaikalUsbDevice extends EventEmitter {
      * @private
      */
     async _handleSendWork(message) {
-        const device = this.devices.find(d => d.id === message.device_id);
+        const device = this.boards.find(d => d.id === message.board_id);
 
         if(!device) {
             console.log('Could not find device for send_work');
@@ -81,7 +81,7 @@ class BaikalUsbDevice extends EventEmitter {
      * @private
      */
     async _handleResult(message) {
-        const device = this.devices.find(d => d.id === message.device_id);
+        const device = this.boards.find(d => d.id === message.board_id);
 
         if(!device) {
             console.log('Could not find device for result');
@@ -97,7 +97,7 @@ class BaikalUsbDevice extends EventEmitter {
 
                     console.log('Found for ' + workIndex);
 
-                    this.emit('nonce_found', work, `BLKU ${message.device_id}`, message.nonce);
+                    this.emit('nonce_found', work, `BLKU ${message.board_id}`, message.nonce);
 
                 } catch(e) {
                     console.log('Could not find work for workIndex: ' + e);
@@ -124,7 +124,7 @@ class BaikalUsbDevice extends EventEmitter {
      * @private
      */
     async _handleInfo(message) {
-        let device = this.devices.find(d => d.id == message.device_id);
+        let device = this.boards.find(d => d.id == message.board_id);
 
         const isNew = !device;
 
@@ -134,13 +134,13 @@ class BaikalUsbDevice extends EventEmitter {
             };
         }
 
-        device.id = message.device_id;
+        device.id = message.board_id;
 
         ['fw_ver', 'hw_ver', 'clock', 'asic_count', 'asic_ver']
             .forEach((i) => device[i] = message[i]);
 
        if(isNew) {
-            this.devices.push(device);
+            this.boards.push(device);
         }
     }
 
@@ -152,7 +152,7 @@ class BaikalUsbDevice extends EventEmitter {
      */
 
     async _handleReset(message) {
-        this.devices = [];
+        this.boards = [];
         this.deviceCount = message.device_count;
 
         for(let deviceId=0; deviceId<this.deviceCount; deviceId++) {
@@ -162,11 +162,11 @@ class BaikalUsbDevice extends EventEmitter {
     }
 
     _checkTemperature() {
-        const temperatures = this.devices.filter(d => typeof d.temp !== "undefined").map(d => d.temp),
+        const temperatures = this.boards.filter(d => typeof d.temp !== "undefined").map(d => d.temp),
             maxTemperature = Math.max(...temperatures);
 
-        if(temperatures.length != this.devices.length) {
-            console.log('Warning: Could not get temperatures for all devices');
+        if(temperatures.length != this.boards.length) {
+            console.log('Warning: Could not get temperatures for all boards');
         }
 
         let fanSpeed = 100;

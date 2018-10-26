@@ -57,7 +57,7 @@ class MessageFactory {
         }
 
         const message = {
-            device_id:   buf.readUInt8(pos++),
+            board_id:   buf.readUInt8(pos++),
             cmd:        buf.readUInt8(pos++),
             param:      buf.readUInt8(pos++),
             dest:       buf.readUInt8(pos++)
