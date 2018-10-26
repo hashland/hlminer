@@ -67,6 +67,8 @@ class BaikalUsbInterface extends EventEmitter {
         if(!this.connected)
             return;
 
+        this.connected = false;
+
         this.usbInEndpoint.stopPoll(err => {
             if(err) {
                 console.log(`Could not stop USB polling: ${err}`);
