@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "bignum": "^0.13.0",
+    "koa": "^2.6.1",
     "multi-hashing": "https://github.com/hashland/node-multi-hashing/tarball/master",
     "packet": "0.0.7",
     "socks5-client": "^1.2.6",
