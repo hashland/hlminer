@@ -43,6 +43,7 @@ class UsbInEndpoint extends UsbEndpoint {
                 self.pollPending--;
 
                 if (self.pollPending == 0) {
+                    delete self.pollTransfers;
                     self.emit('end');
                 }
             }
