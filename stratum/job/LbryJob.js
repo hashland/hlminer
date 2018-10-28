@@ -1,8 +1,8 @@
 const
     {BitcoinJob} = require('./BitcoinJob'),
     multiHashing = require('multi-hashing'),
-    maximumTarget = 0x00000000FFFF0000000000000000000000000000000000000000000000000000,
-    bignum = require('bignum');
+    bignum = require('bignum'),
+    maximumTarget = bignum("26959535291011309493156476344723991336010898738574164086137773096960");
 
 class LbryJob extends BitcoinJob {
 
@@ -29,7 +29,17 @@ class LbryJob extends BitcoinJob {
     }
 
     calculateTarget(difficulty) {
-        return bignum(maximumTarget).div(difficulty);
+        const truediffone   = bignum("26959535291011309493156476344723991336010898738574164086137773096960")
+        const bits64        = bignum("18446744073709551616");
+        const bits128       = bignum("340282366920938463463374607431768211456");
+        const bits192       = bignum("6277101735386680763835789423207666416102355444464034512896");
+        const diff_multiplier2 = 256;
+
+        const d64 = truediffone.mul(diff_multiplier2).div(difficulty).div(bits192);
+
+      //  console.log(d64.toBuffer().toString('hex'));
+
+        return d64;
     }
 
     hash(blockHeader) {
