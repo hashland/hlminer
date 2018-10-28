@@ -111,8 +111,6 @@ class Miner {
             return;
         }
 
-        console.log(`[Found share] Difficulty ${shareDiff.toFixed(3)} (work diff: ${this.client.difficulty}) on device: ${deviceId}`);
-
         const params = [
             work.job.id,
             work.nonce2,
@@ -120,13 +118,11 @@ class Miner {
             nonce
         ];
 
-        const me = this;
-
         this.client.submit(params).then(() => {
-            console.log('Share was accepted :-)');
+            console.log(`[Share accepted] diff: ${(shareDiff/1000).toFixed(1)}k/${(this.client.difficulty/1000).toFixed(1)}k | device: ${deviceId}`);
 
         }, err => {
-            console.log(`SHARE WAS NOT ACCEPTED: ${err}`);
+            console.log(`[Share rejected] diff: ${(shareDiff/1000).toFixed(1)}k/${(this.client.difficulty/1000).toFixed(1)}k | device: ${deviceId} | reason: ${err}`);
         })
 
     }
