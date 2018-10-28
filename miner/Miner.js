@@ -1,7 +1,9 @@
 const StratumClientFactory = require('../stratum/client/ClientFactory').ClientFactory,
     {DeviceFactory} = require('./device/DeviceFactory'),
     {WorkGenerator} = require('./WorkGenerator'),
-    bignum = require('bignum');
+    bignum = require('bignum'),
+    Koa = require('koa'),
+    app = new Koa();
 
 class Miner {
     constructor(algorithm, host, port, user, password, includeCpuDevice) {
@@ -23,6 +25,31 @@ class Miner {
         this.client.on('subscribed', this._handleClientSubscription.bind(this));
 
         this.client.on('notify', this._handleClientNotify.bind(this));
+
+        this.startTime = 0;
+        this._registerWebHooks();
+    }
+
+    _registerWebHooks() {
+        app.use(async ctx => {
+            ctx.body = {
+                miner: {
+                    start_time: this.startTime,
+                    pools: [{
+                        algorithm: this.client.algorithm,
+                        host: this.client.host,
+                        port: this.client.port,
+                        user: this.client.user,
+                        password: this.client.password
+                    }]
+                },
+                devices: this.devices.map(d => {
+                    return {
+                        "type": d.type
+                    }
+                })
+            };
+        });
     }
 
     _clearJobs() {
@@ -84,7 +111,7 @@ class Miner {
             return;
         }
 
-        console.log(`Found share with difficulty ${shareDiff.toFixed(3)} (work diff: ${this.client.difficulty}) on device: ${deviceId}`);
+        console.log(`[Found share] Difficulty ${shareDiff.toFixed(3)} (work diff: ${this.client.difficulty}) on device: ${deviceId}`);
 
         const params = [
             work.job.id,
@@ -92,6 +119,8 @@ class Miner {
             work.job.time,
             nonce
         ];
+
+        const me = this;
 
         this.client.submit(params).then(() => {
             console.log('Share was accepted :-)');
@@ -103,6 +132,8 @@ class Miner {
     }
 
     start() {
+        this.startTime = Date.now() / 1000 | 0;
+
         this.devices.forEach(dev => {
             dev.start();
             dev.on('nonce_found', this._handleNonceFound.bind(this));
@@ -115,6 +146,8 @@ class Miner {
             this._handleMainLoop.bind(this),
             250
         );
+
+        app.listen(3000);
     }
 
     async shutdown() {
