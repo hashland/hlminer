@@ -10,13 +10,14 @@ const
         BAIKAL_WORK_FIFO,
         toBaikalAlgorithm
     } = require('./constants'),
-    {Device} = require('../Device'),
+    EventEmitter = require('events'),
     {RingBuffer} = require('../../util/RingBuffer'),
     {BaikalUsbInterface} = require('./BaikalUsbInterface');
 
-class BaikalUsbDevice extends Device {
-    constructor() {
+class BaikalUsbDevice extends EventEmitter {
+    constructor(usbDevice) {
         super();
+        this.usbDevice = usbDevice;
         this.type = "baikalusb";
 
         this.workQueue = [];
@@ -28,7 +29,7 @@ class BaikalUsbDevice extends Device {
         this.ringBuffer = new RingBuffer(BAIKAL_WORK_FIFO);
         this.deviceCount = 0;
 
-        this.usbInterface = new BaikalUsbInterface();
+        this.usbInterface = new BaikalUsbInterface(usbDevice);
 
         this.usbInterface.on('reset', this._handleReset.bind(this));
         this.usbInterface.on('info', this._handleInfo.bind(this));
@@ -199,6 +200,10 @@ class BaikalUsbDevice extends Device {
     }
 
     async _workLoop() {
+        if(!this.usbInterface.connected) {
+            return;
+        }
+
         for(let deviceId=0; deviceId<this.deviceCount; deviceId++){
             if(this.workQueue.length > 0) {
                 const work = this.workQueue.pop(),

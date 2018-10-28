@@ -22,9 +22,9 @@ const
 } = require('./constants');
 
 class BaikalUsbInterface extends EventEmitter {
-    constructor() {
+    constructor(usbDevice) {
         super();
-        this.usbDevice = null;
+        this.usbDevice = usbDevice;
         this.usbDeviceInterface = null;
         this.usbOutEndpoint = null;
         this.usbInEndpoint = null;
@@ -32,9 +32,8 @@ class BaikalUsbInterface extends EventEmitter {
     }
 
     async connect() {
-        const usbDevices = usb.getDeviceList();
-
-        this.usbDevice = usbDevices.find(d => d.deviceDescriptor.idVendor === BAIKAL_ID_VENDOR && d.deviceDescriptor.idProduct === BAIKAL_ID_PRODUCT);
+        if(this.connected === true)
+            return;
 
         if(!this.usbDevice)
             throw 'Could not find baikalusb device';
@@ -57,47 +56,79 @@ class BaikalUsbInterface extends EventEmitter {
         this.usbInEndpoint = this.usbDeviceInterface.endpoints[1];
         this.usbInEndpoint.transferType = usb.LIBUSB_TRANSFER_TYPE_BULK;
         this.usbInEndpoint.startPoll(1, 512);
+        this.usbInEndpoint.on('end', this._handleUsbEnd.bind(this));
         this.usbInEndpoint.on('data', this._handleUsbData.bind(this));
         this.usbInEndpoint.on('error', this._handleUsbError.bind(this));
-
         this.connected = true;
     }
 
-    async disconnect() {
-        if(!this.connected)
-            return;
-
-        this.connected = false;
-
-        this.usbInEndpoint.stopPoll(err => {
-            if(err) {
-                console.log(`Could not stop USB polling: ${err}`);
+    disconnect() {
+        return new Promise((resolve, reject) => {
+            if(!this.connected) {
+                reject();
                 return;
             }
 
-            this.usbDeviceInterface.release(true, err => {
-                if(err) {
-                    console.log(`Could not release USB interface: ${err}`);
+            this.connected = false;
+
+            this.usbInEndpoint.stopPoll(err => {
+                if (err) {
+                    reject(err);
                     return;
                 }
 
-                try {
-                    this.usbDevice.close();
-                } catch(e) {
-                    console.log(`Could not close USB device: ${e}`);
-                }
+                resolve();
 
-            })
+                this._closeUsb();
+            });
         });
     }
 
 
+    _closeUsb() {
+        return new Promise(
+            (resolve, reject) => {
+                this.usbDeviceInterface.release(true, err => {
+                    if(err) {
+                        reject(err);
+                        return;
+                    }
+
+                    try {
+                        this.usbDevice.close();
+                        resolve();
+                    } catch(e) {
+                        reject(e);
+                    }
+
+                });
+            }
+        );
+    }
+
+    async _handleUsbEnd() {
+        console.log('USB polling ended, restarting');
+        this.usbInEndpoint.startPoll(1, 512);
+
+    }
+
     async _handleUsbError(err) {
-        console.log(`USB error: ${err}, resetting USB`);
-        await this.disconnect();
+        console.log(err);
+
+        switch(err.errno) {
+            case usb.LIBUSB_TRANSFER_STALL:
+                console.log('USB Transfer stalled, resetting');
+                this.usbInEndpoint.clearHalt(err => {});
+                break;
+
+            default:
+                console.log(`USB error: ${err}`);
+                break;
+        }
+       // await this.disconnect();
 
         //reconnect after 1 sec
-        setTimeout(this.connect.bind(this), 1000);
+       // setTimeout(this.connect.bind(this), 1000);
     }
 
     _handleUsbData(buffer) {
@@ -221,6 +252,9 @@ class BaikalUsbInterface extends EventEmitter {
      */
     _sendMessage(cmd, deviceId = 0, param = 0, dest = 0, data = null) {
         return new Promise((resolve, reject) => {
+            if(!this.connected) {
+                reject('Not connected');
+            }
 
             const buf = MessageFactory.createBuffer(cmd, deviceId, param, dest, data);
 
