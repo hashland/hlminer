@@ -3,9 +3,9 @@ const
 
 const miner = new Miner(
     'lbry',
-    'lbry.eu.nicehash.com',
-    3356,
-    'xxx',
+    'lbry.suprnova.cc',
+    6257,
+    'hashland.test',
     'x',
     false
 );
