@@ -1,13 +1,15 @@
 {
-  "name": "minertest",
-  "version": "1.0.0",
+  "name": "hlminer",
+  "version": "0.0.1",
   "description": "",
-  "main": "index.js",
+  "main": "hlminer.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Julian Haupt <julian.haupt@hashland.de>",
+  "license": "MIT",
+  "preferGlobal": true,
+  "bin": "./hlminer",
   "dependencies": {
     "koa": "^2.6.1",
     "packet": "0.0.7",
