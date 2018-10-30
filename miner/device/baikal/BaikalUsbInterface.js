@@ -108,6 +108,10 @@ class BaikalUsbInterface extends EventEmitter {
 
     async _handleUsbEnd() {
         console.log('USB polling ended, restarting');
+        if(!this.connected) {
+            console.log('Reconnecting USB');
+            await this.connect();
+        }
         this.usbInEndpoint.startPoll(1, 512);
 
     }
@@ -117,18 +121,19 @@ class BaikalUsbInterface extends EventEmitter {
 
         switch(err.errno) {
             case usb.LIBUSB_TRANSFER_STALL:
-                console.log('USB Transfer stalled, resetting');
+                console.log('USB Transfer stalled, clearHalt');
                 this.usbInEndpoint.clearHalt(err => {});
                 break;
 
+            case usb.LIBUSB_TRANSFER_ERROR:
+                console.log('USB Transfer error, disconnecting');
+                await this.disconnect();
+                break;
+
             default:
-                console.log(`USB error: ${err}`);
+                console.log(`Unhandled USB error: ${err}`);
                 break;
         }
-       // await this.disconnect();
-
-        //reconnect after 1 sec
-       // setTimeout(this.connect.bind(this), 1000);
     }
 
     _handleUsbData(buffer) {
