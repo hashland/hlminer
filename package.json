@@ -11,6 +11,7 @@
   "preferGlobal": true,
   "bin": "./hlminer",
   "dependencies": {
+    "commander": "^2.19.0",
     "koa": "^2.6.1",
     "packet": "0.0.7",
     "socks5-client": "^1.2.6",

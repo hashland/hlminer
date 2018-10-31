@@ -1,14 +1,54 @@
 #!/usr/bin/env node
 
+
 const
+    program = require('commander'),
+    url = require('url'),
     {Miner} = require('./miner/Miner.js');
 
+
+let algorithms = [],
+    pools = [];
+
+program
+    .version('0.0.1')
+    .option('-a, --algorithm [algo]', 'Specify algorithm to be used', value => algorithms.push(value), [])
+    .option('-p, --pool [url]', 'Specify mining pool in url form: e.g. statum+tcp://user:password@hostname:1234', value => pools.push(value), [])
+    .parse(process.argv);
+
+
+if(pools.length === 0) {
+    console.log('No pools were specified');
+    process.exit(1);
+}
+
+if(algorithms.length === 0) {
+    console.log('No algorithms were specified');
+    process.exit(1);
+}
+
+pools = pools
+    .map(p => url.parse(p))
+    .map(p => {
+        return {
+            hostname: p.hostname,
+            port: p.port,
+            protocol: p.protocol.replace(':', ''),
+            user: p.auth.split(':')[0],
+            password: p.auth.split(':')[1]
+        }
+    });
+
+//currently only one pool is supported
+let algorithm = algorithms[0],
+    pool = pools[0];
+
 const miner = new Miner(
-    'lbry',
-    'lbry.suprnova.cc',
-    6257,
-    'hashland.test',
-    'x',
+    algorithm,
+    pool.hostname,
+    pool.port,
+    pool.user,
+    pool.password,
     false
 );
 
