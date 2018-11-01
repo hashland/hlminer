@@ -92,8 +92,12 @@ class Miner {
         this.devices.forEach(dev => {
 
             while(dev.needsWork()) {
-                const work = this.workGenerator.generateWork();
-                dev.addToWorkQueue(work);
+                try {
+                    const work = this.workGenerator.generateWork();
+                    dev.addToWorkQueue(work);
+                } catch (e) {
+                    console.log(`Could not generate work: ${e}`);
+                }
             }
         });
     }
