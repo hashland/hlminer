@@ -1,16 +1,20 @@
 class NonceGenerator {
-    constructor(nonceSizeInBytes) {
-        this.nonceSizeInBytes = nonceSizeInBytes;
+    /**
+     * Generates a nonce for the given size
+     * @param sizeInBytes
+     */
+    constructor(sizeInBytes) {
+        this.size = sizeInBytes;
         this.counter = 0;
-        this.max = Math.pow(2, nonceSizeInBytes * 8);
-        this.buffer = Buffer.alloc(nonceSizeInBytes, 0);
+        this.max = Math.pow(2, sizeInBytes * 8);
+        this.buffer = Buffer.alloc(sizeInBytes, 0);
     }
 
     getNext(format) {
         if(this.counter === this.max)
             throw 'Counter reached max value';
 
-        this.buffer.writeUIntLE(this.counter, 0, this.nonceSizeInBytes);
+        this.buffer.writeUIntLE(this.counter, 0, this.size);
 
         this.counter++;
 
