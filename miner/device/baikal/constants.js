@@ -40,6 +40,10 @@ exports.toBaikalAlgorithm = (algorithm) => {
         case Algorithm.LBRY:
             return exports.BAIKAL_ALGO_LBRY;
 
+
+        case Algorithm.PASCAL:
+            return exports.BAIKAL_ALGO_PASCAL;
+
         default:
             throw 'Algorithm not supported';
     }
