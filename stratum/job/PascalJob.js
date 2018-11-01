@@ -1,26 +1,32 @@
 const
-    {BitcoinJob} = require('./BitcoinJob'),
     multiHashing = require('multi-hashing'),
     bignum = require('bignum'),
     maximumTarget = bignum("26959535291011309493156476344723991336010898738574164086137773096960");
 
-class PascalJob extends BitcoinJob {
+/**
+ * Pascal Coin
+ * https://github.com/PascalCoin/PascalCoin/wiki/Create-a-Pool-miner
+ */
+class PascalJob  {
+    constructor(id, part1, part3,  time) {
+        this.id = id;
+        this.part1 = part1;
+        this.part3 = part3;
+        this.time = time;
 
 
-    constructor(id, prevHash, coinb1, coinb2, merkleRoot, version, bits, time) {
-        super(id, prevHash, coinb1, coinb2, merkleRoot, version, bits, time);
         this.multiplier = 1;
         this.maximumTarget = maximumTarget;
     }
 
     static fromParamsArray(params) {
         return new PascalJob(
-            params[0], params[1], params[2], params[3], params[4], params[5], params[6], params[7]
+            params[0], params[2], params[3], params[7]
         );
     }
 
     toParamsArray() {
-        return [this.id, this.prevHash, this.coinb1, this.coinb2, this.merkleBranches, this.version, this.bits, this.time];
+        return [this.id, "", this.part1, this.part3, [], "", "", this.time];
     }
 
     toSubmitArray(nonce, nonce2) {
@@ -29,7 +35,6 @@ class PascalJob extends BitcoinJob {
     }
 
     calculateTarget(difficulty) {
-
         const truediffone   = bignum("26959535291011309493156476344723991336010898738574164086137773096960")
         const bits64        = bignum("18446744073709551616");
         const bits128       = bignum("340282366920938463463374607431768211456");
@@ -56,8 +61,9 @@ class PascalJob extends BitcoinJob {
 
         let pos = 0;
 
-        const payload = Buffer.from(this.coinb1 + extraNonce1 + extraNonce2 + this.coinb2, 'hex');
-        pos = payload.copy(blockHeader, pos);
+        const part2Payload = extraNonce1 + extraNonce2;
+
+        pos = Buffer.from(this.part1 + part2Payload + this.part3, 'hex').copy(blockHeader, pos);
 
         //time LE encoded
         Buffer
