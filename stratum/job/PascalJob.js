@@ -23,6 +23,11 @@ class PascalJob extends BitcoinJob {
         return [this.id, this.prevHash, this.coinb1, this.coinb2, this.merkleBranches, this.version, this.bits, this.time];
     }
 
+    toSubmitArray(nonce, nonce2) {
+        const nonceLittleEndian = Buffer.from(nonce, 'hex').swap32().toString('hex');
+        return [this.id, nonce2, this.time, nonceLittleEndian];
+    }
+
     calculateTarget(difficulty) {
 
         const truediffone   = bignum("26959535291011309493156476344723991336010898738574164086137773096960")
@@ -38,6 +43,11 @@ class PascalJob extends BitcoinJob {
 
     hash(blockHeader) {
         return multiHashing.sha256d(blockHeader);
+    }
+
+    hashBignum(blockheader) {
+        const hash = this.hash(blockheader);
+        return bignum.fromBuffer(hash, {endian: 'big', size: 32});
     }
 
 
@@ -60,7 +70,6 @@ class PascalJob extends BitcoinJob {
         if(nonce) {
             Buffer
                 .from(nonce, 'hex')
-                .swap32()
                 .copy(blockHeader, pos);
             pos += 4;
 

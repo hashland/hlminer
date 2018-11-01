@@ -28,6 +28,10 @@ class LbryJob extends BitcoinJob {
         return [this.id, this.prevHash, this.claimtrie, this.coinb1, this.coinb2, this.merkleBranches, this.version, this.bits, this.time];
     }
 
+    toSubmitArray(nonce, nonce2) {
+        return [this.id, nonce2, this.time, nonce];
+    }
+
     calculateTarget(difficulty) {
         const truediffone   = bignum("26959535291011309493156476344723991336010898738574164086137773096960")
         const bits64        = bignum("18446744073709551616");
@@ -44,6 +48,12 @@ class LbryJob extends BitcoinJob {
 
     hash(blockHeader) {
         return multiHashing.lbry(blockHeader);
+    }
+
+
+    hashBignum(blockheader) {
+        const hash = this.hash(blockheader);
+        return bignum.fromBuffer(hash, {endian: 'little', size: 32});
     }
 
 

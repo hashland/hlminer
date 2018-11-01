@@ -99,11 +99,9 @@ class Miner {
     }
 
     _handleNonceFound(work, deviceId, nonce) {
-        const header = work.job.createBlockHeader(work.extraNonce1, work.nonce2, nonce),
-            hash = work.job.hash(header);
-
-
-        const hashBignum = bignum.fromBuffer(hash, {endian: 'little', size: 32}),
+        const
+            header = work.job.createBlockHeader(work.extraNonce1, work.nonce2, nonce),
+            hashBignum = work.job.hashBignum(header),
             shareDiff = work.job.maximumTarget / hashBignum.toNumber() * work.job.multiplier;
 
         if(shareDiff < 1 || shareDiff < this.client.difficulty) {
@@ -111,18 +109,13 @@ class Miner {
             return;
         }
 
-        const params = [
-            work.job.id,
-            work.nonce2,
-            work.job.time,
-            nonce
-        ];
+        const params = work.job.toSubmitArray(nonce, work.nonce2);
 
         this.client.submit(params).then(() => {
-            console.log(`[Share accepted] diff: ${(shareDiff/1000).toFixed(1)}k/${(this.client.difficulty/1000).toFixed(1)}k | device: ${deviceId}`);
+            console.log(`[Share accepted] diff: ${shareDiff}/${this.client.difficulty} | device: ${deviceId}`);
 
         }, err => {
-            console.log(`[Share rejected] diff: ${(shareDiff/1000).toFixed(1)}k/${(this.client.difficulty/1000).toFixed(1)}k | device: ${deviceId} | reason: ${err}`);
+            console.log(`[Share rejected] diff: ${shareDiff}/${this.client.difficulty} | device: ${deviceId} | reason: ${err}`);
         })
 
     }
