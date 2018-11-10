@@ -3,7 +3,9 @@ const EventEmitter = require('events'),
     socks5 = require('socks5-client'),
     Algorithm = require('../Algorithm'),
     {JobFactory} = require('../job/JobFactory'),
+    ReadlineParser = require('@serialport/parser-readline'),
     _ = require('underscore');
+
 
 class BaseClient extends EventEmitter {
     constructor(options) {
@@ -23,6 +25,8 @@ class BaseClient extends EventEmitter {
 
         this.debug = (options.debug);
 
+        this.connectTimeout = 5000;
+
         /**
          * User used for authorization
          * @type {string}
@@ -40,12 +44,6 @@ class BaseClient extends EventEmitter {
          * @type {boolean}
          */
         this.connected = false;
-
-        /**
-         * Input Buffer used for input processing
-         * @type {string}
-         */
-        this.inputBuffer = '';
 
         /**
          * Socket handle
@@ -94,7 +92,6 @@ class BaseClient extends EventEmitter {
 
     resetParameters() {
         this.connected = false;
-        this.inputBuffer = '';
         this.socket = null;
         this.messageCounter = 0;
         this.resultCallbacks = [];
@@ -110,36 +107,105 @@ class BaseClient extends EventEmitter {
         });
     }
 
-    connect() {
+    _createSocket() {
         if (!_.isEmpty(this.socksHost)) {
             this.socket = socks5.createConnection({
                 host: this.host,
                 port: this.port,
                 socksHost: this.socksHost,
-                socksPort: this.socksPort
+                socksPort: this.socksPort,
+                timeout: this.connectTimeout
             })
 
         } else {
             this.socket = net.createConnection({
                 host: this.host,
-                port: this.port
+                port: this.port,
+                timeout: this.connectTimeout
             })
         }
 
-        this.socket.on('data', (data) => this.handleData(data));
-
-        this.socket.on('error', (e) => {
-            console.log(`StratumClient> Received error on socket for ${this.host}:${this.port}: ${e.message}`);
-            this.disconnect();
+        this.socket.on('timeout', () => {
+            if(!this.connected) {
+                this._destroySocket('Connect timeout');
+            }
         });
 
+        this.socket.on('connect', () => {
+            this.connected = true;
+            this.onSocketConnect();
+        });
 
-        this.socket.on('end', () => this.disconnect());
-        this.socket.on('close', () => this.disconnect());
+        this.socket.on('error', (e) => {
+            this._destroySocket(e.message);
+        });
 
-        this.socket.on('connect', () => this.onSocketConnect());
+        this.socket.on('end', () => {
+            this._destroySocket('Socket ended');
+        });
+
+        this.socket.on('close', hadError => {
+            this._destroySocket('Socket closed');
+        });
+
+        this.socket.pipe(new ReadlineParser()).on('data', this._handleData.bind(this));
+
     }
 
+    _destroySocket(err) {
+        this.connected = false;
+
+        if(!this.socket || this.socket.destroyed)
+            return;
+
+        this.socket.end();
+        this.socket.destroy();
+        this.socket = null;
+
+        this.emit('disconnect', err)
+    }
+
+    /**
+     * Handle new incoming data
+     * @param data
+     */
+    _handleData(data) {
+        if(this.debug) {
+            console.log("Client <<< " + data);
+        }
+        try {
+            const json = JSON.parse(data);
+            this.handleMessage(json);
+
+        } catch (e) {
+            console.log(`StratumClient> Could not process message from ${this.host}:${this.port}: ${e.message}`);
+            console.log(data);
+
+        }
+    }
+
+
+    connect() {
+        if(this.connected)
+            return;
+
+        if(!this.socket)
+            this._createSocket();
+    }
+
+    /**
+     * Force disconnect
+     */
+    disconnect(err = null) {
+        this.connected = false;
+
+        if (null === this.socket) {
+            return;
+        }
+
+        this._destroySocket(err);
+        this.resetParameters();
+    }
 
     /**
      * Hook that gets called right after the client socket connected.
@@ -172,58 +238,6 @@ class BaseClient extends EventEmitter {
     }
 
     /**
-     * Force disconnect
-     */
-    disconnect(err = null) {
-        this.connected = false;
-
-        if (null === this.socket) {
-            return;
-        }
-
-        this.socket.destroy();
-        this.socket = null;
-
-        this.resetParameters();
-
-        this.emit('disconnect', err)
-    }
-
-
-
-    /**
-     * Handle new incoming data
-     * @param data
-     */
-    handleData(data) {
-        if(this.debug) {
-            console.log("Client <<< " + data);
-        }
-
-        this.inputBuffer += data;
-
-        let index;
-        while ((index = this.inputBuffer.indexOf('\n')) !== -1) {
-            const message = this.inputBuffer.substr(0, index);
-            this.inputBuffer = this.inputBuffer.substr(index+1);
-
-            if(message === '') {
-                continue;
-            }
-
-            try {
-                const json = JSON.parse(message);
-                this.handleMessage(json);
-
-            } catch (e) {
-                console.log(`StratumClient> Could not process message from ${this.host}:${this.port}: ${e.message}`);
-                console.log(message);
-                return;
-            }
-        }
-    }
-
-    /**
      * Tries to authorize on the upstream server
      * @returns {Promise}
      */
@@ -236,12 +250,12 @@ class BaseClient extends EventEmitter {
                 }
 
                 if (!_.isBoolean(message.result)) {
-                    reject(`result is malformed: ${JSON.stringify(message.result)}`)
+                    reject(`result is malformed: ${JSON.stringify(message.result)}`);
                     return;
                 }
 
                 resolve(message.result);
-            }
+            };
 
             this.resultCallbacks[this.messageCounter + 1] = callback;
             this.sendMessage('mining.authorize', [this.user, this.password]);
@@ -263,13 +277,13 @@ class BaseClient extends EventEmitter {
                 }
 
                 if (!_.isArray(message.result)) {
-                    reject(`result is malformed: ${JSON.stringify(message.result)}`)
+                    reject(`result is malformed: ${JSON.stringify(message.result)}`);
                     return;
                 }
 
                 this._handleSubscription(message.result);
                 resolve(message.result);
-            }
+            };
 
             this.resultCallbacks[this.messageCounter + 1] = callback;
             this.sendMessage('mining.subscribe', this.generateSubscriptionParameters());
@@ -327,7 +341,7 @@ class BaseClient extends EventEmitter {
                     this.rejectedSharesCounter++;
                     reject(message.error);
                 }
-            }
+            };
 
             this.resultCallbacks[this.messageCounter + 1] = callback;
             this.sendMessage('mining.submit', params);
