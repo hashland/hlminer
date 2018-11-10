@@ -1,12 +1,11 @@
 const StratumClientFactory = require('../stratum/client/ClientFactory').ClientFactory,
     {DeviceFactory} = require('./device/DeviceFactory'),
     {WorkGenerator} = require('./WorkGenerator'),
-    bignum = require('bignum'),
     Koa = require('koa'),
     app = new Koa();
 
 class Miner {
-    constructor(algorithm, host, port, user, password, includeCpuDevice) {
+    constructor(algorithm, host, port, user, password, includeCpuDevice, protocolDump) {
         this.devices = DeviceFactory.createAvailableDevices(includeCpuDevice);
         this.jobs = [];
         this.mainLoopInterval = null;
@@ -17,7 +16,8 @@ class Miner {
             port: port,
             user: user,
             password: password,
-            agent: 'hlminer/0.1'
+            agent: 'hlminer/0.1',
+            debug: protocolDump
         });
 
         this.client.on('connect', this._handleClientConnect.bind(this));
