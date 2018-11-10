@@ -4,6 +4,8 @@ const EventEmitter = require('events'),
     Algorithm = require('../Algorithm'),
     {JobFactory} = require('../job/JobFactory'),
     ReadlineParser = require('@serialport/parser-readline'),
+    JSONParser = require('../parser/JSONParser'),
+    PassThrough = require('stream').PassThrough,
     _ = require('underscore');
 
 
@@ -148,8 +150,18 @@ class BaseClient extends EventEmitter {
             this._destroySocket('Socket closed');
         });
 
-        this.socket.pipe(new ReadlineParser()).on('data', this._handleData.bind(this));
+        if(this.debug) {
+            const passtrough = new PassThrough();
+            this.socket.on('data', data => console.log(`Client <<< ${data}`));
+            this.socket.pipe(passtrough);
+        }
+        
+        const jsonParser = new JSONParser();
+        jsonParser.on('data', this.handleMessage.bind(this));
 
+        this.socket
+            .pipe(new ReadlineParser())
+            .pipe(jsonParser);
     }
 
     _destroySocket(err) {
@@ -164,26 +176,6 @@ class BaseClient extends EventEmitter {
 
         this.emit('disconnect', err)
     }
-
-    /**
-     * Handle new incoming data
-     * @param data
-     */
-    _handleData(data) {
-        if(this.debug) {
-            console.log("Client <<< " + data);
-        }
-        try {
-            const json = JSON.parse(data);
-            this.handleMessage(json);
-
-        } catch (e) {
-            console.log(`StratumClient> Could not process message from ${this.host}:${this.port}: ${e.message}`);
-            console.log(data);
-
-        }
-    }
-
 
     connect() {
         if(this.connected)
