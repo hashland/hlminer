@@ -11,6 +11,7 @@
   "preferGlobal": true,
   "bin": "./hlminer",
   "dependencies": {
+    "@serialport/parser-readline": "^2.0.1",
     "commander": "^2.19.0",
     "koa": "^2.6.1",
     "packet": "0.0.7",
