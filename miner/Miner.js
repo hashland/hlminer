@@ -20,7 +20,7 @@ class Miner {
             debug: protocolDump
         });
 
-        this.client.on('connect', this._handleClientConnect.bind(this));
+        this.client.on('authorized', this._handleClientConnect.bind(this));
         this.client.on('disconnect', this._handleClientDisconnect.bind(this));
         this.client.on('subscribed', this._handleClientSubscription.bind(this));
 
@@ -70,12 +70,6 @@ class Miner {
     _handleClientDisconnect(reason) {
         console.log(`Stratum client disconnected: ${reason}`);
         this._clearJobs();
-
-        setTimeout(() => {
-            this.client.connect();
-        }, 3000);
-
-        //TODO: add variable delay
     }
 
     _handleClientNotify(job, cleanJobs) {
