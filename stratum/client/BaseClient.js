@@ -82,7 +82,13 @@ class BaseClient extends EventEmitter {
          * Array holding result callbacks (Format messageId => CallbackFn)
          * @type {Array}
          */
-        this.callCallbacks = [];
+        this.callCallbacks = {};
+
+        /**
+         * Array holding timeout callbacks for all pending calls
+         * @type {Array}
+         */
+        this.callTimeoutCallbacks = {};
 
         /**
          * Indicates if this client could successfully authorize itself
@@ -109,12 +115,11 @@ class BaseClient extends EventEmitter {
         this.rejectedSharesCounter = 0;
 
         this.registerEventHandler();
-
-        this.callTimeoutCb = null;
     }
 
     resetParameters() {
-        this.callCallbacks = [];
+        this.callCallbacks = {};
+        this.callTimeoutCallbacks = {};
         this.authorized = false;
         this.jobs = [];
         this.acceptedSharesCounter = 0;
@@ -261,9 +266,12 @@ class BaseClient extends EventEmitter {
      */
     _handleMessage(message) {
         if (!_.isUndefined(message.result) && _.isFunction(this.callCallbacks[message.id])) {
+            clearTimeout(this.callTimeoutCallbacks[message.id]);
+            delete this.callTimeoutCallbacks[message.id];
+
             this.callCallbacks[message.id](message);
             delete this.callCallbacks[message.id];
-            clearTimeout(this.callTimeoutCb);
+
             return;
         }
 
@@ -303,7 +311,7 @@ class BaseClient extends EventEmitter {
             .pipe(this.socket)
             .write(data);
 
-        this.callTimeoutCb = setTimeout(() => {
+        this.callTimeoutCallbacks[message.id] = setTimeout(() => {
             this._destroySocket('Call timeout')
         }, this.callTimeout);
     }
