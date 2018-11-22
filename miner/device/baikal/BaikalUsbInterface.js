@@ -111,9 +111,9 @@ class BaikalUsbInterface extends EventEmitter {
         if(!this.connected) {
             console.log('Reconnecting USB');
             await this.connect();
+        } else {
+            this.usbInEndpoint.startPoll(1, 512);
         }
-        this.usbInEndpoint.startPoll(1, 512);
-
     }
 
     async _handleUsbError(err) {
