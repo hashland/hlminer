@@ -77,9 +77,13 @@ class BaikalUsbInterface extends EventEmitter {
                     return;
                 }
 
-                resolve();
-
-                this._closeUsb();
+                this._closeUsb()
+                    .then(() => {
+                        resolve();
+                    })
+                    .catch(e => {
+                        reject(e)
+                    });
             });
         });
     }
