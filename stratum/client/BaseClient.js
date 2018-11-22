@@ -186,6 +186,7 @@ class BaseClient extends EventEmitter {
         });
 
         this.socketOutputPassTrough = new PassThrough();
+        this.socketOutputPassTrough.pipe(this.socket);
         this.socketInputPassTrough = new PassThrough();
 
         if(this.debug) {
@@ -307,9 +308,7 @@ class BaseClient extends EventEmitter {
 
         const data = JSON.stringify(message) + "\n";
 
-        this.socketOutputPassTrough
-            .pipe(this.socket)
-            .write(data);
+        this.socketOutputPassTrough.write(data);
 
         this.callTimeoutCallbacks[message.id] = setTimeout(() => {
             this._destroySocket('Call timeout')
