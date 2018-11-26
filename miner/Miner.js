@@ -2,7 +2,8 @@ const StratumClientFactory = require('../stratum/client/ClientFactory').ClientFa
     {DeviceFactory} = require('./device/DeviceFactory'),
     {WorkGenerator} = require('./WorkGenerator'),
     Koa = require('koa'),
-    app = new Koa();
+    app = new Koa(),
+    {name, version} = require('root-require')('package.json');
 
 class Miner {
     constructor(algorithm, host, port, user, password, includeCpuDevice, protocolDump) {
@@ -16,7 +17,7 @@ class Miner {
             port: port,
             user: user,
             password: password,
-            agent: 'hlminer/0.1',
+            agent: `${name}/${version}`,
             debug: protocolDump
         });
 
