@@ -15,6 +15,7 @@
     "commander": "^2.19.0",
     "koa": "^2.6.1",
     "packet": "0.0.7",
+    "root-require": "^0.3.1",
     "socks5-client": "^1.2.6",
     "underscore": "^1.9.1"
   },
