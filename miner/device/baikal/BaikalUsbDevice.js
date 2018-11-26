@@ -11,8 +11,8 @@ const
         toBaikalAlgorithm
     } = require('./constants'),
     EventEmitter = require('events'),
-    {RingBuffer} = require('../../util/RingBuffer'),
-    {BaikalUsbInterface} = require('./BaikalUsbInterface');
+    {BaikalUsbInterface} = require('./BaikalUsbInterface'),
+    {BaikalUsbBoard} = require('./BaikalUsbBoard');
 
 class BaikalUsbDevice extends EventEmitter {
     constructor(usbDevice) {
@@ -26,14 +26,9 @@ class BaikalUsbDevice extends EventEmitter {
         this.cutOffTemperature = BAIKAL_CUTOFF_TEMP;
         this.fanSpeed = BAIKAL_FANSPEED_DEF;
 
-        this.ringBuffer = new RingBuffer(BAIKAL_WORK_FIFO);
-        this.deviceCount = 0;
-
         this.usbInterface = new BaikalUsbInterface(usbDevice);
 
         this.usbInterface.on('reset', this._handleReset.bind(this));
-        this.usbInterface.on('info', this._handleInfo.bind(this));
-        this.usbInterface.on('result', this._handleResult.bind(this));
         this.usbInterface.on('set_option', this._handleSetOption.bind(this));
         this.usbInterface.on('send_work', this._handleSendWork.bind(this));
         this.usbInterface.on('idle', this._handleIdle.bind(this));
@@ -76,75 +71,6 @@ class BaikalUsbDevice extends EventEmitter {
         device.clk = message.param << 1;
     }
 
-    /**
-     * Result request for the given device
-     * @param message
-     * @returns {Promise<void>}
-     * @private
-     */
-    async _handleResult(message) {
-        const device = this.boards.find(d => d.id === message.board_id);
-
-        if(!device) {
-            console.log('Could not find device for result');
-            return;
-        }
-
-        switch(message.status) {
-            case BAIKAL_STATUS_NONCE_READY:
-
-                try {
-                    const workIndex = message.work_idx,
-                        work = this.ringBuffer.get(workIndex);
-
-                    console.log('Found for ' + workIndex);
-
-                    this.emit('nonce_found', work, `BLKU ${message.board_id}`, message.nonce);
-
-                } catch(e) {
-                    console.log('Could not find work for workIndex: ' + e);
-
-                }
-
-                break;
-
-            case BAIKAL_STATUS_JOB_EMPTY:
-                break;
-
-            case BAIKAL_STATUS_NEW_MINER:
-                this.reset();
-                break;
-        }
-
-        device.temp = message.temp;
-    }
-
-    /**
-     * Info Request for the given device
-     * @param message
-     * @returns {Promise<void>}
-     * @private
-     */
-    async _handleInfo(message) {
-        let device = this.boards.find(d => d.id == message.board_id);
-
-        const isNew = !device;
-
-        if(isNew) {
-            device = {
-                temp: 0
-            };
-        }
-
-        device.id = message.board_id;
-
-        ['fw_ver', 'hw_ver', 'clock', 'asic_count', 'asic_ver']
-            .forEach((i) => device[i] = message[i]);
-
-       if(isNew) {
-            this.boards.push(device);
-        }
-    }
 
     /**
      * Called when the device was resetted
@@ -152,24 +78,25 @@ class BaikalUsbDevice extends EventEmitter {
      * @returns {Promise<void>}
      * @private
      */
-
     async _handleReset(message) {
         this.boards = [];
-        this.deviceCount = message.device_count;
 
-        for(let deviceId=0; deviceId<this.deviceCount; deviceId++) {
-            await this.usbInterface.requestInfo(deviceId);
-            await this.usbInterface.setOption(deviceId, this.cutOffTemperature, this.fanSpeed);
+        for(let boardId=0; boardId<message.device_count; boardId++) {
+
+            const board = new BaikalUsbBoard(this.usbInterface, boardId);
+            board.on('nonce_found', (work, board_name, nonce) => { this.emit('nonce_found', work, board_name, nonce) });
+            board.on('error', () => { this.reset() });
+
+            await board.requestInfo();
+            await board.setOption(this.cutOffTemperature, this.fanSpeed);
+
+            this.boards.push(board);
         }
     }
 
     _checkTemperature() {
-        const temperatures = this.boards.filter(d => typeof d.temp !== "undefined").map(d => d.temp),
+        const temperatures = this.boards.filter(board => typeof board.temperature !== null).map(board => board.temperature),
             maxTemperature = Math.max(...temperatures);
-
-        if(temperatures.length != this.boards.length) {
-            console.log('Warning: Could not get temperatures for all boards');
-        }
 
         let fanSpeed = 100;
 
@@ -204,24 +131,23 @@ class BaikalUsbDevice extends EventEmitter {
             return;
         }
 
-        for(let deviceId=0; deviceId<this.deviceCount; deviceId++){
+        this.boards.forEach(async board => {
             if(this.workQueue.length > 0) {
-                const work = this.workQueue.pop(),
-                    workIndex = this.ringBuffer.push(work);
+                const work = this.workQueue.pop();
 
-                await this.usbInterface.sendWork(deviceId, workIndex, toBaikalAlgorithm(work.algorithm), work.target, work.blockHeader);
+                await board.addWork(work)
             }
+        });
 
-            await this.usbInterface.requestResult(deviceId);
-        }
 
         this._checkTemperature();
     }
 
     async _setOptions() {
-        for(let deviceId=0; deviceId<this.deviceCount; deviceId++) {
-            await this.usbInterface.setOption(deviceId, this.cutOffTemperature, this.fanSpeed);
-        }
+        this.boards.forEach(async board => {
+            await board.setOption(this.cutOffTemperature, this.fanSpeed);
+        });
+
     }
 
     /**
