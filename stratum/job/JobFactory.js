@@ -3,8 +3,8 @@ const
     {BitcoinGoldJob} = require('./BitcoinGoldJob'),
     {LbryJob} = require('./LbryJob'),
     {ZcashJob} = require('./ZcashJob'),
-    {PascalJob} = require('./PascalJob'),
-    Algorithm = require('../Algorithm');
+    {PascalLegacyJob} = require('./PascalLegacyJob'),
+    Algorithm = require('../algorithm/Algorithm');
 
 class JobFactory {
     static createJobFromParamsArray(algorithm, params) {
@@ -22,8 +22,8 @@ class JobFactory {
                 return LbryJob.fromParamsArray(params);
                 break;
 
-            case Algorithm.PASCAL:
-                return PascalJob.fromParamsArray(params);
+            case Algorithm.PASCAL_LEGACY:
+                return PascalLegacyJob.fromParamsArray(params);
                 break;
 
             default:

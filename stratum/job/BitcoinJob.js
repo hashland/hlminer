@@ -52,24 +52,6 @@ class BitcoinJob {
     toParamsArray() {
         return [this.id, this.prevHash, this.coinb1, this.coinb2, this.merkleBranches, this.version, this.bits, this.time];
     }
-
-    /**
-     * Create Merkle Root for the given extraNonces
-     * @param extraNonce1
-     * @param extraNonce2
-     * @returns {*}
-     */
-    createMerkleRoot(extraNonce1, extraNonce2) {
-        const coinbase = Buffer.from(this.coinb1 + extraNonce1 + extraNonce2 + this.coinb2, 'hex');
-
-        let merkleRoot = hash.sha256d(coinbase);
-
-        this.merkleBranches
-            .map(mb => Buffer.from(mb, 'hex'))
-            .forEach(mb => merkleRoot = hash.sha256d(Buffer.concat([merkleRoot, mb])));
-
-        return merkleRoot;
-    }
 }
 
 exports.BitcoinJob = BitcoinJob;
