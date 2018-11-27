@@ -32,6 +32,8 @@ class BaikalUsbDevice extends EventEmitter {
         this.usbInterface.on('set_option', this._handleSetOption.bind(this));
         this.usbInterface.on('send_work', this._handleSendWork.bind(this));
         this.usbInterface.on('idle', this._handleIdle.bind(this));
+
+        this.target = null;
     }
 
     /**
@@ -52,6 +54,13 @@ class BaikalUsbDevice extends EventEmitter {
      */
     async _handleSetOption(message) {
        //just swallow this event
+    }
+
+    async _setOptions() {
+        this.boards.forEach(async board => {
+            await board.setOption(this.cutOffTemperature, this.fanSpeed);
+        });
+
     }
 
     /**
@@ -84,6 +93,7 @@ class BaikalUsbDevice extends EventEmitter {
         for(let boardId=0; boardId<message.device_count; boardId++) {
 
             const board = new BaikalUsbBoard(this.usbInterface, boardId);
+            board.setTarget(this.target);
             board.on('nonce_found', (work, board_name, nonce) => { this.emit('nonce_found', work, board_name, nonce) });
             board.on('error', () => { this.reset() });
 
@@ -143,13 +153,6 @@ class BaikalUsbDevice extends EventEmitter {
         this._checkTemperature();
     }
 
-    async _setOptions() {
-        this.boards.forEach(async board => {
-            await board.setOption(this.cutOffTemperature, this.fanSpeed);
-        });
-
-    }
-
     /**
      * Device Interface
      */
@@ -170,6 +173,13 @@ class BaikalUsbDevice extends EventEmitter {
     async reset() {
         await this.stop();
         await this.start();
+    }
+
+    setTarget(target) {
+        this.target = target;
+        this.boards.forEach(board => {
+            board.setTarget(target);
+        })
     }
 
     needsWork() {

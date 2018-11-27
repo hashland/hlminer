@@ -3,13 +3,20 @@ const StratumClientFactory = require('../stratum/client/ClientFactory').ClientFa
     {WorkGenerator} = require('./WorkGenerator'),
     Koa = require('koa'),
     app = new Koa(),
-    {name, version} = require('root-require')('package.json');
+    {name, version} = require('root-require')('package.json'),
+    {AlgorithmFactory} = require('../stratum/algorithm/AlgorithmFactory');
 
 class Miner {
     constructor(algorithm, host, port, user, password, includeCpuDevice, protocolDump) {
         this.devices = DeviceFactory.createAvailableDevices(includeCpuDevice);
         this.jobs = [];
         this.mainLoopInterval = null;
+
+        this.algorithm = AlgorithmFactory.createAlgorithm(algorithm);
+
+        if(null === this.algorithm) {
+            throw `Unknown algorithm: ${algorithm}`
+        }
 
         this.client = StratumClientFactory.createClient(algorithm, {
             algorithm: algorithm,
@@ -24,7 +31,7 @@ class Miner {
         this.client.on('authorized', this._handleClientConnect.bind(this));
         this.client.on('disconnect', this._handleClientDisconnect.bind(this));
         this.client.on('subscribed', this._handleClientSubscription.bind(this));
-
+        this.client.on('mining.set_difficulty', this._handleClientDiffChange.bind(this));
         this.client.on('notify', this._handleClientNotify.bind(this));
 
         this.startTime = 0;
@@ -46,7 +53,18 @@ class Miner {
                 },
                 devices: this.devices.map(d => {
                     return {
-                        "type": d.type
+                        "type": d.type,
+                        "boards": d.boards.map(board => {
+                            return {
+                                temperature: board.temperature,
+                                hardwareVersion: board.hardwareVersion,
+                                firmwareVersion: board.firmwareVersion,
+                                clock: board.clock,
+                                asicVersion: board.asicVersion,
+                                asicCount: board.asicCount
+
+                        }
+                        })
                     }
                 })
             };
@@ -58,6 +76,17 @@ class Miner {
         this.devices.forEach(dev => dev.clearWorkQueue());
     }
 
+    _handleClientDiffChange([difficulty]) {
+        console.log(`Difficulty changed to ${difficulty}`);
+
+        this.difficulty = difficulty;
+        this.target = this.algorithm.getTargetForDifficulty(difficulty);
+
+        this.devices.forEach(device => {
+            device.setTarget(this.target)
+        });
+    }
+
     _handleClientConnect() {
         console.log('Stratum client connected');
         this._clearJobs();
@@ -65,7 +94,7 @@ class Miner {
 
     _handleClientSubscription() {
         console.log('Stratum client subscribed');
-        this.workGenerator = new WorkGenerator(this.client);
+        this.workGenerator = new WorkGenerator(this.algorithm, this.client);
     }
 
     _handleClientDisconnect(reason) {
@@ -98,12 +127,12 @@ class Miner {
 
     _handleNonceFound(work, deviceId, nonce) {
         const
-            header = work.job.createBlockHeader(work.extraNonce1, work.nonce2, nonce),
-            hashBignum = work.job.hashBignum(header),
-            shareDiff = work.job.maximumTarget / hashBignum.toNumber() * work.job.multiplier;
+            header = this.algorithm.createBlockHeaderFromJob(work.job, work.extraNonce1, work.nonce2, nonce),
+            hashBignum = this.algorithm.hashBignum(header),
+            shareDiff = this.algorithm.getHashDifficulty(hashBignum).toNumber();
 
-        if(shareDiff < 1 || shareDiff < this.client.difficulty) {
-            console.log(`Share difficulty ${shareDiff} was lower than work difficulty (${this.client.difficulty}), target is: ${work.target.toBuffer().toString('hex')} possible hardware error`);
+        if(shareDiff < 1 || shareDiff < this.difficulty) {
+            console.log(`Share difficulty ${shareDiff} was lower than work difficulty (${this.client.difficulty}), discarded`);
             return;
         }
 

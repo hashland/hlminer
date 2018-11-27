@@ -1,7 +1,7 @@
 const
     {BitcoinClient} = require('./BitcoinClient'),
     {ZcashClient} = require('./ZcashClient'),
-    Algorithm = require('../Algorithm');
+    Algorithm = require('../algorithm/Algorithm');
 
 class ClientFactory {
     static createClient(algorithm, options) {

@@ -1,4 +1,4 @@
-const Algorithm = require('../../../stratum/Algorithm');
+const Algorithm = require('../../../stratum/algorithm/Algorithm');
 
 exports.BAIKAL_ID_VENDOR        = 0x0483;
 exports.BAIKAL_ID_PRODUCT       = 0x5740;
@@ -41,10 +41,10 @@ exports.toBaikalAlgorithm = (algorithm) => {
             return exports.BAIKAL_ALGO_LBRY;
 
 
-        case Algorithm.PASCAL:
+        case Algorithm.PASCAL_LEGACY:
             return exports.BAIKAL_ALGO_PASCAL;
 
         default:
             throw 'Algorithm not supported';
     }
-}
+};

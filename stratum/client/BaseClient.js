@@ -1,7 +1,7 @@
 const EventEmitter = require('events'),
     net = require('net'),
     socks5 = require('socks5-client'),
-    Algorithm = require('../Algorithm'),
+    Algorithm = require('../algorithm/Algorithm'),
     {JobFactory} = require('../job/JobFactory'),
     ReadlineParser = require('@serialport/parser-readline'),
     JSONParser = require('../parser/JSONParser'),

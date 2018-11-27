@@ -4,6 +4,8 @@ const {
         BAIKAL_STATUS_NEW_MINER,
         toBaikalAlgorithm
     } = require('./constants'),
+    {bits192, maximumTarget} = require('../../../stratum/algorithm/constants'),
+    bignum = require('bignum'),
     {RingBuffer} = require('../../util/RingBuffer'),
     EventEmitter = require('events');
 
@@ -25,8 +27,21 @@ class BaikalUsbBoard extends EventEmitter {
         this.temperature = null;
 
         this.ringBuffer = new RingBuffer(255);
+
+        this.target = null;
+        this.lastNonceFoundAt = 0;
+        this.lastNonceWorkIndex = null;
+        this.noncesFound = 0;
     }
 
+    getHashRate() {
+        return this.clock * this.asicCount * 512;
+    }
+
+    setTarget(target) {
+        // target is managed in the hashboards with 8 bytes accurancy, so strip away the rest
+        this.target = target.div(bits192);
+    }
 
     /**
      * Info Request for the given device
@@ -60,15 +75,28 @@ class BaikalUsbBoard extends EventEmitter {
 
                 try {
                     const workIndex = message.work_idx,
-                        work = this.ringBuffer.get(workIndex);
+                        work = this.ringBuffer.get(workIndex),
+                        now = Date.now();
 
                     //this.index
                     console.log(`Found for ${message.board_id}: ${workIndex} / ${this.ringBuffer.index}`);
 
+
+                    const timeSinceLastNonce = this.lastNonceFoundAt ? now - this.lastNonceFoundAt : 0;
+
+                    this.lastNonceFoundAt = now;
+                    this.lastNonceWorkIndex = workIndex;
+                    this.noncesFound++;
+
+                    const workRemain = Math.abs((workIndex-255-this.ringBuffer.index)%255);
+
+                    console.log(`workRemain: ${workRemain} timeSinceLastNonce: ${timeSinceLastNonce}`);
+
+
                     this.emit('nonce_found', work, `BLKU ${this.id}`, message.nonce);
 
                 } catch(e) {
-                    console.log('Could not find work for workIndex: ' + e);
+                    console.log('Could not find work for workIndex: ',e);
 
                 }
 
@@ -97,7 +125,7 @@ class BaikalUsbBoard extends EventEmitter {
         const workIndex = this.ringBuffer.push(work);
 
         try {
-            await this.usbInterface.sendWork(this.id, workIndex, toBaikalAlgorithm(work.algorithm), work.target, work.blockHeader);
+            await this.usbInterface.sendWork(this.id, workIndex, toBaikalAlgorithm(work.algorithm), this.target, work.blockHeader);
 
             //TODO: Move this into a work loop
             await this.usbInterface.requestResult(this.id);
