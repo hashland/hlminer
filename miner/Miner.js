@@ -55,9 +55,12 @@ class Miner {
                     password: this.client.password
                 }],
                 devices: this.devices.map(d => {
+
                     return {
-                        "type": d.type,
-                        "boards": d.boards.map(board => {
+                        type: d.type,
+                        hashrate: d.getHashrate(),
+                        effective_hashrate: d.getEffectiveHashrate(),
+                        boards: d.boards.map(board => {
                             return {
                                 id: board.getId(),
 

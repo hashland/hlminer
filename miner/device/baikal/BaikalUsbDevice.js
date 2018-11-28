@@ -36,6 +36,23 @@ class BaikalUsbDevice extends EventEmitter {
         this.algorithm = null;
     }
 
+    getHashrate() {
+        let hashrate = 0;
+        this.boards.forEach(board => {
+            hashrate += board.getHashrate();
+        });
+        return hashrate;
+    }
+
+    getEffectiveHashrate() {
+        let effectiveHashrate = 0;
+        this.boards.forEach(board => {
+            effectiveHashrate += board.getEffectiveHashrate();
+        });
+        return effectiveHashrate;
+    }
+
+
     /**
      * Device was sent to idle mode
      * @param message
