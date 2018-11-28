@@ -15,7 +15,7 @@ class PascalLegacyAlgorithm extends BitcoinAlgorithm {
         this.multiplier = 1;
     }
 
-    get name() {
+    getName() {
         return PASCAL_LEGACY;
     }
 

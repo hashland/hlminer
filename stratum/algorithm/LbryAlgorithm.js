@@ -14,7 +14,7 @@ class LbryAlgorithm extends BitcoinAlgorithm {
         this.multiplier = 256;
     }
 
-    get name() {
+    getName() {
         return LBRY;
     }
 

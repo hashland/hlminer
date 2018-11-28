@@ -59,14 +59,24 @@ class Miner {
                         "type": d.type,
                         "boards": d.boards.map(board => {
                             return {
-                                temperature: board.temperature,
-                                hardwareVersion: board.hardwareVersion,
-                                firmwareVersion: board.firmwareVersion,
-                                clock: board.clock,
-                                asicVersion: board.asicVersion,
-                                asicCount: board.asicCount
+                                id: board.getId(),
+                                name: board.getName(),
 
-                        }
+                                hardware_version: board.getHardwareVersion(),
+                                firmware_version: board.getFirmwareVersion(),
+
+                                chip_count: board.getChipCount(),
+                                chip_clock: board.getChipClock(),
+
+                                temperature: board.getTemperature(),
+
+
+                                difficulty: board.getDifficulty(),
+                                hashrate: board.getHashrate(),
+                                effective_hashrate: board.getEffectiveHashrate(),
+
+                                algorithm: board.getAlgorithm() != null ? board.getAlgorithm().getName() : null
+                            }
                         })
                     }
                 })

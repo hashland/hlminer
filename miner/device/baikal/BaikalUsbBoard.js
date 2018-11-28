@@ -33,11 +33,66 @@ class BaikalUsbBoard extends EventEmitter {
         this.difficulty = null;
         this.lastNonceFoundAt = 0;
         this.lastNonceWorkIndex = null;
-        this.noncesFound = 0;
+
+        this.statsStartedAt = null;
+        this.sharesFound = 0;
+
+        this.clearStats();
     }
 
-    getHashRate() {
+    getEffectiveHashrate() {
+        const secondsElapsed = (Date.now() - this.statsStartedAt) / 1000;
+        return ((Math.pow(2, 24) * this.sharesFound) / secondsElapsed) / 1000 | 0;
+    }
+
+    getHashrate() {
         return this.clock * this.asicCount * 512;
+    }
+
+    getId() {
+        return this.id;
+    }
+
+    getName() {
+        return 'Baikal';
+    }
+
+    getHardwareVersion() {
+        if(this.hardwareVersion !== this.asicVersion) {
+            return `HW: ${this.hardwareVersion} ASIC: ${this.asicVersion}`;
+
+        } else {
+            return this.hardwareVersion;
+        }
+    }
+
+    getFirmwareVersion() {
+        return this.firmwareVersion;
+    }
+
+    getTemperature() {
+        return this.temperature;
+    }
+
+    getChipCount() {
+        return this.asicCount;
+    }
+
+    getChipClock() {
+        return this.clock;
+    }
+
+    getDifficulty() {
+        return this.difficulty;
+    }
+
+    getAlgorithm() {
+        return this.algorithm;
+    }
+
+    clearStats() {
+        this.statsStartedAt = Date.now();
+        this.sharesFound = 0;
     }
 
     setAlgorithm(algorithm) {
@@ -96,7 +151,8 @@ class BaikalUsbBoard extends EventEmitter {
 
                     this.lastNonceFoundAt = now;
                     this.lastNonceWorkIndex = workIndex;
-                    this.noncesFound++;
+
+                    this.sharesFound += this.difficulty;
 
                     const workRemain = Math.abs((workIndex-255-this.ringBuffer.index)%255);
 
