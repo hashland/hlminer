@@ -176,6 +176,14 @@ class BaikalUsbInterface extends EventEmitter {
         }
     }
 
+    getBusNumber() {
+        return this.usbDevice.busNumber;
+    }
+
+    getDeviceAddress() {
+        return this.usbDevice.deviceAddress;
+    }
+
     resetUsb() {
         return new Promise((resolve, reject) => {
 

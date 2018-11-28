@@ -10,15 +10,20 @@ const {
     EventEmitter = require('events');
 
 class BaikalUsbBoard extends EventEmitter {
-    constructor(usbInterface, id) {
+    constructor(usbInterface, board_id) {
         super();
 
         this.usbInterface = usbInterface;
-        this.id = id;
+
+        this.board_id = board_id;
+
+        this.id = `BLKU:${usbInterface.getBusNumber()}:${usbInterface.getDeviceAddress()}:${this.board_id}`;
+
         this.algorithm = null;
 
         this.usbInterface.on('info', this._handleInfo.bind(this));
         this.usbInterface.on('result', this._handleResult.bind(this));
+        this.usbInterface.on('send_work', this._handleSendWork.bind(this));
 
         this.firmwareVersion = null;
         this.hardwareVersion = null;
@@ -51,10 +56,6 @@ class BaikalUsbBoard extends EventEmitter {
 
     getId() {
         return this.id;
-    }
-
-    getName() {
-        return 'Baikal';
     }
 
     getHardwareVersion() {
@@ -115,7 +116,7 @@ class BaikalUsbBoard extends EventEmitter {
      * @private
      */
     async _handleInfo(message) {
-        if(message.board_id !== this.id)
+        if(message.board_id !== this.board_id)
             return;
 
         this.firmwareVersion = message.fw_ver;
@@ -132,7 +133,7 @@ class BaikalUsbBoard extends EventEmitter {
      * @private
      */
     async _handleResult(message) {
-        if(message.board_id !== this.id)
+        if(message.board_id !== this.board_id)
             return;
 
         switch(message.status) {
@@ -159,7 +160,7 @@ class BaikalUsbBoard extends EventEmitter {
                     console.log(`workRemain: ${workRemain} timeSinceLastNonce: ${timeSinceLastNonce}`);
 
 
-                    this.emit('nonce_found', work, `BLKU ${this.id}`, message.nonce);
+                    this.emit('nonce_found', work, this.id, message.nonce);
 
                 } catch(e) {
                     console.log('Could not find work for workIndex: ',e);
@@ -179,22 +180,35 @@ class BaikalUsbBoard extends EventEmitter {
         this.temperature = message.temp;
     }
 
+    /**
+     * New work was sent to the given device
+     * @param message
+     * @returns {Promise<void>}
+     * @private
+     */
+    async _handleSendWork(message) {
+        if(message.board_id !== this.board_id)
+            return;
+
+        this.clock = message.param << 1;
+    }
+
     async requestInfo() {
-        return await this.usbInterface.requestInfo(this.id);
+        return await this.usbInterface.requestInfo(this.board_id);
     }
 
     async setOption(cutOffTemperature, fanSpeed) {
-        return await this.usbInterface.setOption(this.id, cutOffTemperature, fanSpeed);
+        return await this.usbInterface.setOption(this.board_id, cutOffTemperature, fanSpeed);
     }
 
     async addWork(work) {
         const workIndex = this.ringBuffer.push(work);
 
         try {
-            await this.usbInterface.sendWork(this.id, workIndex, toBaikalAlgorithm(this.algorithm), this.target, work.blockHeader);
+            await this.usbInterface.sendWork(this.board_id, workIndex, toBaikalAlgorithm(this.algorithm), this.target, work.blockHeader);
 
             //TODO: Move this into a work loop
-            await this.usbInterface.requestResult(this.id);
+            await this.usbInterface.requestResult(this.board_id);
         } catch(e) {
             console.log(`Could not send work to device: ${e}`);
         }

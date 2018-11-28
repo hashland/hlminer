@@ -30,7 +30,6 @@ class BaikalUsbDevice extends EventEmitter {
 
         this.usbInterface.on('reset', this._handleReset.bind(this));
         this.usbInterface.on('set_option', this._handleSetOption.bind(this));
-        this.usbInterface.on('send_work', this._handleSendWork.bind(this));
         this.usbInterface.on('idle', this._handleIdle.bind(this));
 
         this.target = null;
@@ -63,24 +62,6 @@ class BaikalUsbDevice extends EventEmitter {
         });
 
     }
-
-    /**
-     * New work was sent to the given device
-     * @param message
-     * @returns {Promise<void>}
-     * @private
-     */
-    async _handleSendWork(message) {
-        const device = this.boards.find(d => d.id === message.board_id);
-
-        if(!device) {
-            console.log('Could not find device for send_work');
-            return;
-        }
-
-        device.clk = message.param << 1;
-    }
-
 
     /**
      * Called when the device was resetted

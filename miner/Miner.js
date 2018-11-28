@@ -60,7 +60,6 @@ class Miner {
                         "boards": d.boards.map(board => {
                             return {
                                 id: board.getId(),
-                                name: board.getName(),
 
                                 hardware_version: board.getHardwareVersion(),
                                 firmware_version: board.getFirmwareVersion(),
