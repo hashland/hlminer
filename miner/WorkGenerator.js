@@ -16,9 +16,6 @@ class WorkGenerator {
      * Return next header to do hashing on
      */
     generateWork() {
-        if(!this.client.difficulty)
-            throw 'Client has no difficulty';
-
         if(!this.client.extraNonce1)
             throw 'Client has no extraNonce1';
 
