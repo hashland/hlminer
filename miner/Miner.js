@@ -41,16 +41,15 @@ class Miner {
     _registerWebHooks() {
         app.use(async ctx => {
             ctx.body = {
-                miner: {
-                    start_time: this.startTime,
-                    pools: [{
-                        algorithm: this.client.algorithm,
-                        host: this.client.host,
-                        port: this.client.port,
-                        user: this.client.user,
-                        password: this.client.password
-                    }]
-                },
+                start_time: this.startTime,
+                version: version,
+                pools: [{
+                    algorithm: this.client.algorithm,
+                    host: this.client.host,
+                    port: this.client.port,
+                    user: this.client.user,
+                    password: this.client.password
+                }],
                 devices: this.devices.map(d => {
                     return {
                         "type": d.type,
