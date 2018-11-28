@@ -132,7 +132,7 @@ class Miner {
         const
             header = this.algorithm.createBlockHeaderFromJob(work.job, work.extraNonce1, work.nonce2, nonce),
             hashBignum = this.algorithm.hashBignum(header),
-            shareDiff = this.algorithm.getHashDifficulty(hashBignum).toNumber();
+            shareDiff = this.algorithm.getDifficultyForTarget(hashBignum);
 
         if(shareDiff < 1 || shareDiff < this.difficulty) {
             console.log(`Share difficulty ${shareDiff} was lower than work difficulty (${this.client.difficulty}), discarded`);

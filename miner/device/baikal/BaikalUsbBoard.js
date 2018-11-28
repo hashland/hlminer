@@ -30,6 +30,7 @@ class BaikalUsbBoard extends EventEmitter {
         this.ringBuffer = new RingBuffer(255);
 
         this.target = null;
+        this.difficulty = null;
         this.lastNonceFoundAt = 0;
         this.lastNonceWorkIndex = null;
         this.noncesFound = 0;
@@ -43,9 +44,13 @@ class BaikalUsbBoard extends EventEmitter {
         this.algorithm = algorithm;
     }
 
-    setTarget(target) {
+    setTarget(targetBigNum) {
+        if(!this.algorithm)
+            throw 'No algorithm set, set algorithm first';
+
         // target is managed in the hashboards with 8 bytes accurancy, so strip away the rest
-        this.target = target.div(bits192);
+        this.target = targetBigNum.div(bits192);
+        this.difficulty = this.algorithm.getDifficultyForTarget(this.target.mul(bits192));
     }
 
     /**

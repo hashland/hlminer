@@ -94,8 +94,8 @@ class BaikalUsbDevice extends EventEmitter {
         for(let boardId=0; boardId<message.device_count; boardId++) {
 
             const board = new BaikalUsbBoard(this.usbInterface, boardId);
-            board.setTarget(this.target);
             board.setAlgorithm(this.algorithm);
+            board.setTarget(this.target);
 
             board.on('nonce_found', (work, board_name, nonce) => { this.emit('nonce_found', work, board_name, nonce) });
             board.on('error', () => { this.reset() });

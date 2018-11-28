@@ -14,6 +14,15 @@ class BitcoinAlgorithm {
     }
 
     /**
+     * Calculate the difficulty for the given target
+     * @param targetBigNum
+     * @returns {number}
+     */
+    getDifficultyForTarget(targetBigNum) {
+        return maximumTarget.mul(this.multiplier).toNumber() / targetBigNum.toNumber();
+    }
+
+    /**
      * Calculate the target for the given difficulty
      * @param difficulty
      * @returns bignum
@@ -21,16 +30,6 @@ class BitcoinAlgorithm {
     getTargetForDifficulty(difficulty) {
         return maximumTarget.mul(this.multiplier).div(difficulty);
     }
-
-    /**
-     * Calculate the difficulty for the given hash
-     * @param hashBignum
-     * @returns bignum
-     */
-    getHashDifficulty(hashBignum) {
-        return maximumTarget.div(hashBignum).mul(this.multiplier);
-    }
-
 
     /**
      * Create Merkle Root for given parameters
