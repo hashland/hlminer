@@ -1,6 +1,7 @@
 const
     multiHashing = require('multi-hashing'),
     { maximumTarget } = require('./constants'),
+    { LBRY } = require('./Algorithm'),
     { BitcoinAlgorithm } = require('./BitcoinAlgorithm'),
     bignum = require('bignum'),
     BLOCK_HEADER_SIZE = 112,
@@ -11,6 +12,10 @@ class LbryAlgorithm extends BitcoinAlgorithm {
     constructor() {
         super();
         this.multiplier = 256;
+    }
+
+    get name() {
+        return LBRY;
     }
 
     createBlockHeaderFromJob(job, extraNonce1, extraNonce2, nonce) {

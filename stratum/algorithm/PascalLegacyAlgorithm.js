@@ -3,6 +3,7 @@ const
     { maximumTarget } = require('./constants'),
     { BitcoinAlgorithm } = require('./BitcoinAlgorithm'),
     bignum = require('bignum'),
+    { PASCAL_LEGACY } = require('./Algorithm'),
     { AsciiGenerator } = require('../generator/AsciiGenerator'),
     BLOCK_HEADER_SIZE = 200,
     BLOCK_HEADER_NONCE_OFFSET = BLOCK_HEADER_SIZE - 4;
@@ -14,7 +15,9 @@ class PascalLegacyAlgorithm extends BitcoinAlgorithm {
         this.multiplier = 1;
     }
 
-
+    get name() {
+        return PASCAL_LEGACY;
+    }
 
     createNonceGenerator(nonceSize) {
         return new AsciiGenerator(nonceSize);
