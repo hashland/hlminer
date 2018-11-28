@@ -95,7 +95,7 @@ class BaikalUsbDevice extends EventEmitter {
             board.setAlgorithm(this.algorithm);
             board.setTarget(this.target);
 
-            board.on('nonce_found', (work, board_name, nonce) => { this.emit('nonce_found', work, board_name, nonce) });
+            board.on('share_found', share => { this.emit('share_found', share) });
             board.on('error', () => { this.reset() });
 
             await board.requestInfo();

@@ -51,7 +51,7 @@ class BaikalUsbBoard extends EventEmitter {
     }
 
     getHashrate() {
-        return this.clock * this.asicCount * 512;
+        return this.clock * this.asicCount * 500;
     }
 
     getId() {
@@ -153,14 +153,25 @@ class BaikalUsbBoard extends EventEmitter {
                     this.lastNonceFoundAt = now;
                     this.lastNonceWorkIndex = workIndex;
 
-                    this.sharesFound += this.difficulty;
 
                     const workRemain = Math.abs((workIndex-255-this.ringBuffer.index)%255);
 
                     console.log(`workRemain: ${workRemain} timeSinceLastNonce: ${timeSinceLastNonce}`);
 
+                    const
+                        header = this.algorithm.createBlockHeaderFromJob(work.job, work.extraNonce1, work.nonce2, message.nonce),
+                        shareDifficulty = this.algorithm.getDifficultyForTarget(this.algorithm.hashBignum(header));
 
-                    this.emit('nonce_found', work, this.id, message.nonce);
+                    if(shareDifficulty > this.difficulty) {
+                        this.sharesFound += this.difficulty;
+                    }
+
+                    this.emit('share_found', {
+                        board_id: this.id,
+                        difficulty: shareDifficulty,
+                        nonce: message.nonce,
+                        work: work
+                    });
 
                 } catch(e) {
                     console.log('Could not find work for workIndex: ',e);

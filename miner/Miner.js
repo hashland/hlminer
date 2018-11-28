@@ -11,6 +11,7 @@ class Miner {
         this.devices = DeviceFactory.createAvailableDevices(includeCpuDevice);
         this.jobs = [];
         this.mainLoopInterval = null;
+        this.statsInterval = null;
 
         this.algorithm = AlgorithmFactory.createAlgorithm(algorithm);
 
@@ -140,26 +141,34 @@ class Miner {
         });
     }
 
-    _handleNonceFound(work, deviceId, nonce) {
-        const
-            header = this.algorithm.createBlockHeaderFromJob(work.job, work.extraNonce1, work.nonce2, nonce),
-            hashBignum = this.algorithm.hashBignum(header),
-            shareDiff = this.algorithm.getDifficultyForTarget(hashBignum);
+    _handleStats() {
+        this.printStats();
+    }
 
-        if(shareDiff < 1 || shareDiff < this.difficulty) {
-            console.log(`Share difficulty ${shareDiff} was lower than work difficulty (${this.client.difficulty}), discarded`);
+    _handleShareFound(share) {
+        const work = share.work;
+
+        if(share.difficulty < this.client.difficulty) {
+            console.log(`Share difficulty ${share.difficulty} was lower than work difficulty (${this.client.difficulty}), discarded`);
             return;
         }
 
-        const params = work.job.toSubmitArray(nonce, work.nonce2);
+        const params = work.job.toSubmitArray(share.nonce, work.nonce2);
 
         this.client.submit(params).then(() => {
-            console.log(`[Share accepted] diff: ${shareDiff}/${this.client.difficulty} | device: ${deviceId}`);
+            console.log(`[Share accepted] diff: ${share.difficulty}/${this.client.difficulty} from board_id: ${share.board_id}`);
 
         }, err => {
-            console.log(`[Share rejected] diff: ${shareDiff}/${this.client.difficulty} | device: ${deviceId} | reason: ${err}`);
+            console.log(`[Share rejected] diff: ${share.difficulty}/${this.client.difficulty} from board_id: ${share.board_id} | reason: ${err}`);
         })
 
+
+    }
+
+    printStats() {
+        this.devices.forEach(d => {
+            console.log(`Hashrate: ${(d.getHashrate()/1000/1000).toFixed(2)} GH/s Effective Hashrate: ${(d.getEffectiveHashrate()/1000/1000).toFixed(2)} GH/s`);
+        });
     }
 
     start() {
@@ -167,7 +176,7 @@ class Miner {
 
         this.devices.forEach(dev => {
             dev.start();
-            dev.on('nonce_found', this._handleNonceFound.bind(this));
+            dev.on('share_found', this._handleShareFound.bind(this));
         });
 
         //TODO: Promise after init
@@ -178,11 +187,17 @@ class Miner {
             250
         );
 
+        this.statsInterval = setInterval(
+            this._handleStats.bind(this),
+            1000
+        );
+
         app.listen(3000);
     }
 
     async shutdown() {
         clearInterval(this.mainLoopInterval);
+        clearInterval(this.statsInterval);
 
         this.devices.forEach(dev => {
             dev.stop();
