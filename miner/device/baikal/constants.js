@@ -36,7 +36,7 @@ exports.BAIKAL_FAN_TEMP_STEPS     = {
 
 
 exports.toBaikalAlgorithm = (algorithm) => {
-    switch(algorithm) {
+    switch(algorithm.name) {
         case Algorithm.LBRY:
             return exports.BAIKAL_ALGO_LBRY;
 

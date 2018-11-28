@@ -14,6 +14,10 @@ class Miner {
 
         this.algorithm = AlgorithmFactory.createAlgorithm(algorithm);
 
+        this.devices.forEach(device => {
+            device.setAlgorithm(this.algorithm)
+        });
+
         if(null === this.algorithm) {
             throw `Unknown algorithm: ${algorithm}`
         }

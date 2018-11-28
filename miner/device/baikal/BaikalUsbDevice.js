@@ -34,6 +34,7 @@ class BaikalUsbDevice extends EventEmitter {
         this.usbInterface.on('idle', this._handleIdle.bind(this));
 
         this.target = null;
+        this.algorithm = null;
     }
 
     /**
@@ -94,6 +95,8 @@ class BaikalUsbDevice extends EventEmitter {
 
             const board = new BaikalUsbBoard(this.usbInterface, boardId);
             board.setTarget(this.target);
+            board.setAlgorithm(this.algorithm);
+
             board.on('nonce_found', (work, board_name, nonce) => { this.emit('nonce_found', work, board_name, nonce) });
             board.on('error', () => { this.reset() });
 
@@ -125,6 +128,21 @@ class BaikalUsbDevice extends EventEmitter {
             this.setFanSpeed(fanSpeed);
         }
     }
+
+    setAlgorithm(algorithm) {
+        this.algorithm = algorithm;
+        this.boards.forEach(board => {
+            board.setAlgorithm(algorithm);
+        })
+    }
+
+    setTarget(target) {
+        this.target = target;
+        this.boards.forEach(board => {
+            board.setTarget(target);
+        })
+    }
+
 
     setFanSpeed(fanSpeed) {
         if(fanSpeed < 0 || fanSpeed > 100) {
@@ -175,12 +193,6 @@ class BaikalUsbDevice extends EventEmitter {
         await this.start();
     }
 
-    setTarget(target) {
-        this.target = target;
-        this.boards.forEach(board => {
-            board.setTarget(target);
-        })
-    }
 
     needsWork() {
         return this.workQueue.length < 10;

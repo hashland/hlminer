@@ -15,6 +15,7 @@ class BaikalUsbBoard extends EventEmitter {
 
         this.usbInterface = usbInterface;
         this.id = id;
+        this.algorithm = null;
 
         this.usbInterface.on('info', this._handleInfo.bind(this));
         this.usbInterface.on('result', this._handleResult.bind(this));
@@ -36,6 +37,10 @@ class BaikalUsbBoard extends EventEmitter {
 
     getHashRate() {
         return this.clock * this.asicCount * 512;
+    }
+
+    setAlgorithm(algorithm) {
+        this.algorithm = algorithm;
     }
 
     setTarget(target) {
@@ -125,7 +130,7 @@ class BaikalUsbBoard extends EventEmitter {
         const workIndex = this.ringBuffer.push(work);
 
         try {
-            await this.usbInterface.sendWork(this.id, workIndex, toBaikalAlgorithm(work.algorithm), this.target, work.blockHeader);
+            await this.usbInterface.sendWork(this.id, workIndex, toBaikalAlgorithm(this.algorithm), this.target, work.blockHeader);
 
             //TODO: Move this into a work loop
             await this.usbInterface.requestResult(this.id);
