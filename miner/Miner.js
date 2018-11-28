@@ -165,9 +165,21 @@ class Miner {
 
     }
 
+    formatHashrate(hashrate) {
+        return (hashrate / 1000 / 1000).toFixed(2) + " GH/s";
+    }
+
     printStats() {
-        this.devices.forEach(d => {
-            console.log(`Hashrate: ${(d.getHashrate()/1000/1000).toFixed(2)} GH/s Effective Hashrate: ${(d.getEffectiveHashrate()/1000/1000).toFixed(2)} GH/s`);
+        this.devices.forEach(device => {
+            const
+                deviceInfo = `[${device.getId()}] hashrate: ${this.formatHashrate(device.getHashrate())}, ${this.formatHashrate(device.getEffectiveHashrate())} (effective)`,
+                boardsInfo = device.boards.map(board => ` |- [${board.id}] hashrate: ${this.formatHashrate(board.getHashrate())}, ${this.formatHashrate(board.getEffectiveHashrate())} (effective), hw_ver: ${board.getHardwareVersion()}, fw_ver: ${board.getFirmwareVersion()},  temp: ${board.temperature}°C` ).join("\n");
+
+            console.log("");
+            console.log(deviceInfo);
+            console.log(boardsInfo);
+            console.log("");
+
         });
     }
 
@@ -189,7 +201,7 @@ class Miner {
 
         this.statsInterval = setInterval(
             this._handleStats.bind(this),
-            1000
+            5000
         );
 
         app.listen(3000);

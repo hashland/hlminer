@@ -18,6 +18,7 @@ class BaikalUsbDevice extends EventEmitter {
     constructor(usbDevice) {
         super();
         this.usbDevice = usbDevice;
+
         this.type = "baikalusb";
 
         this.workQueue = [];
@@ -27,6 +28,7 @@ class BaikalUsbDevice extends EventEmitter {
         this.fanSpeed = BAIKAL_FANSPEED_DEF;
 
         this.usbInterface = new BaikalUsbInterface(usbDevice);
+        this.id = `BLKU:${this.usbInterface.getBusNumber()}:${this.usbInterface.getDeviceAddress()}`;
 
         this.usbInterface.on('reset', this._handleReset.bind(this));
         this.usbInterface.on('set_option', this._handleSetOption.bind(this));
@@ -34,6 +36,10 @@ class BaikalUsbDevice extends EventEmitter {
 
         this.target = null;
         this.algorithm = null;
+    }
+
+    getId() {
+        return this.id;
     }
 
     getHashrate() {
