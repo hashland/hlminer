@@ -30,7 +30,7 @@ class WorkGenerator {
 
         //TODO: if nonce2 overflow, change time
 
-        return new Work(this.job, this.client.algorithm, this.client.extraNonce1, nonce2, header);
+        return new Work(this.job, this.client.extraNonce1, nonce2, header);
     }
 
 
