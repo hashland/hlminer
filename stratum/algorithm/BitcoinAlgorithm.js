@@ -32,6 +32,15 @@ class BitcoinAlgorithm {
     }
 
     /**
+     * Estimates the amount of hashes needed to find given shares
+     * @param shares
+     * @returns {number}
+     */
+    getEstimatedHashesForShares(shares) {
+        return Math.pow(2, 32 - Math.log2(this.multiplier)) * shares;
+    }
+
+    /**
      * Create Merkle Root for given parameters
      * @param coinb1
      * @param extraNonce1

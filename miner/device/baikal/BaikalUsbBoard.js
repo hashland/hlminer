@@ -47,7 +47,7 @@ class BaikalUsbBoard extends EventEmitter {
 
     getEffectiveHashrate() {
         const secondsElapsed = (Date.now() - this.statsStartedAt) / 1000;
-        return ((Math.pow(2, 24) * this.sharesFound) / secondsElapsed) / 1000 | 0;
+        return (this.algorithm.getEstimatedHashesForShares(this.sharesFound) / secondsElapsed) / 1000 | 0;
     }
 
     getHashrate() {
