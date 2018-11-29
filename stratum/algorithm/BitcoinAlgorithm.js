@@ -23,9 +23,18 @@ class BitcoinAlgorithm {
     }
 
     /**
+     * Get the
+     * @param hash
+     * @returns {number}
+     */
+    getDifficultyForHash(hash) {
+        return this.getDifficultyForTarget(this.hashToBignum(hash));
+    }
+
+    /**
      * Calculate the target for the given difficulty
      * @param difficulty
-     * @returns bignum
+     * @returns {bignum}
      */
     getTargetForDifficulty(difficulty) {
         return maximumTarget.mul(this.multiplier).div(difficulty);
@@ -38,6 +47,15 @@ class BitcoinAlgorithm {
      */
     getEstimatedHashesForShares(shares) {
         return Math.pow(2, 32 - Math.log2(this.multiplier)) * shares;
+    }
+
+    /**
+     * Read the given hash into a bignum
+     * @param hash
+     * @returns {bignum}
+     */
+    hashToBignum(hash) {
+        return bignum.fromBuffer(hash, {endian: 'little', size: 32});
     }
 
     /**

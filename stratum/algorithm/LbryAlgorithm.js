@@ -82,13 +82,6 @@ class LbryAlgorithm extends BitcoinAlgorithm {
     hash(blockHeader) {
         return multiHashing.lbry(blockHeader);
     }
-
-
-    hashBignum(blockheader) {
-        const hash = this.hash(blockheader);
-        return bignum.fromBuffer(hash, {endian: 'little', size: 32});
-    }
-
 }
 
 exports.LbryAlgorithm = LbryAlgorithm;

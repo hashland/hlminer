@@ -35,6 +35,8 @@ class BaikalUsbBoard extends EventEmitter {
         this.ringBuffer = new RingBuffer(255);
 
         this.target = null;
+        this.board_target = null;
+
         this.difficulty = null;
         this.lastNonceFoundAt = 0;
         this.lastNonceWorkIndex = null;
@@ -105,8 +107,11 @@ class BaikalUsbBoard extends EventEmitter {
             throw 'No algorithm set, set algorithm first';
 
         // target is managed in the hashboards with 8 bytes accurancy, so strip away the rest
-        this.target = targetBigNum.div(bits192);
-        this.difficulty = this.algorithm.getDifficultyForTarget(this.target.mul(bits192));
+
+        this.target = targetBigNum;
+        this.difficulty = this.algorithm.getDifficultyForTarget(this.target);
+
+        this.board_target = targetBigNum.div(bits192);
     }
 
     /**
@@ -159,8 +164,9 @@ class BaikalUsbBoard extends EventEmitter {
                     console.log(`workRemain: ${workRemain} timeSinceLastNonce: ${timeSinceLastNonce}`);
 
                     const
-                        header = this.algorithm.createBlockHeaderFromJob(work.job, work.extraNonce1, work.nonce2, message.nonce),
-                        shareDifficulty = this.algorithm.getDifficultyForTarget(this.algorithm.hashBignum(header));
+                        blockHeader = this.algorithm.createBlockHeaderFromJob(work.job, work.extraNonce1, work.nonce2, message.nonce),
+                        blockHash = this.algorithm.hash(blockHeader),
+                        shareDifficulty = this.algorithm.getDifficultyForHash(blockHash);
 
                     if(shareDifficulty > this.difficulty) {
                         this.sharesFound += this.difficulty;
@@ -168,7 +174,10 @@ class BaikalUsbBoard extends EventEmitter {
 
                     this.emit('share_found', {
                         board_id: this.id,
+                        block_header: blockHeader,
+                        block_hash: blockHash,
                         difficulty: shareDifficulty,
+                        target: this.target,
                         nonce: message.nonce,
                         work: work
                     });
@@ -216,7 +225,7 @@ class BaikalUsbBoard extends EventEmitter {
         const workIndex = this.ringBuffer.push(work);
 
         try {
-            await this.usbInterface.sendWork(this.board_id, workIndex, toBaikalAlgorithm(this.algorithm), this.target, work.blockHeader);
+            await this.usbInterface.sendWork(this.board_id, workIndex, toBaikalAlgorithm(this.algorithm), this.board_target, work.blockHeader);
 
             //TODO: Move this into a work loop
             await this.usbInterface.requestResult(this.board_id);

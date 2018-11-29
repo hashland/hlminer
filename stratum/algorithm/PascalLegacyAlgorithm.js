@@ -59,8 +59,7 @@ class PascalLegacyAlgorithm extends BitcoinAlgorithm {
         return multiHashing.sha256d(blockHeader);
     }
 
-    hashBignum(blockheader) {
-        const hash = this.hash(blockheader);
+    hashToBignum(hash) {
         return bignum.fromBuffer(hash, {endian: 'big', size: 32});
     }
 
