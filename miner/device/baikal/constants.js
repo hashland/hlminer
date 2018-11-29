@@ -21,6 +21,7 @@ exports.BAIKAL_WORK_FIFO        = 200;
 exports.BAIKAL_CUTOFF_TEMP      = 55;
 exports.BAIKAL_FANSPEED_DEF     = 70;
 
+exports.BAIKAL_STATUS_WORKING     = 0x00;
 exports.BAIKAL_STATUS_NONCE_READY = 0x01;
 exports.BAIKAL_STATUS_JOB_EMPTY   = 0x02;
 exports.BAIKAL_STATUS_NEW_MINER   = 0x04;

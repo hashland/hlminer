@@ -8,7 +8,8 @@ const
         BAIKAL_GET_RESULT,
         BAIKAL_STATUS_JOB_EMPTY,
         BAIKAL_STATUS_NONCE_READY,
-        BAIKAL_STATUS_NEW_MINER
+        BAIKAL_STATUS_NEW_MINER,
+        BAIKAL_STATUS_WORKING
     }       = require('./constants');
 
 class MessageFactory {
@@ -102,6 +103,8 @@ class MessageFactory {
                 }
                 else if (message.param & 0x04) {
                     message.status = BAIKAL_STATUS_NEW_MINER;
+                } else if (message.param === 0) {
+                    message.status = BAIKAL_STATUS_WORKING;
                 }
 
                 message.chip_id       = data.readUInt8(4);
